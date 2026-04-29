@@ -360,18 +360,27 @@ export default function App() {
     }
   }
 
-  async function restartEvidenceStep(stepKey: WorkflowStepKey): Promise<void> {
-    if (!session || (stepKey !== 'pid' && stepKey !== 'poa' && stepKey !== 'eucc')) {
+  async function restartWorkflowStep(stepKey: WorkflowStepKey): Promise<void> {
+    if (!session || (stepKey !== 'pid' && stepKey !== 'poa' && stepKey !== 'eucc' && stepKey !== 'vatIssuance')) {
       return;
     }
 
-    invalidatePolling();
+    const shouldCleanupRemoteHistory = isPollableStepKey(stepKey) && hasPendingRemoteHistory(session, stepKey);
+
+    if (shouldCleanupRemoteHistory && isPollableStepKey(stepKey)) {
+      invalidatePolling([stepKey]);
+    }
+
     setSessionState({
       status: 'loading',
-      detail: `Re-requesting ${actionLabels[stepKey]}.`,
+      detail: `Restarting ${actionLabels[stepKey]}.`,
     });
 
     try {
+      if (shouldCleanupRemoteHistory && isPollableStepKey(stepKey)) {
+        await cleanupPendingRemoteHistory(session, [stepKey]);
+      }
+
       const resetResponse = await fetch(`${apiBaseUrl}/api/sessions/${session.sessionId}/steps/${stepKey}`, {
         method: 'PATCH',
         headers: {
@@ -379,7 +388,7 @@ export default function App() {
         },
         body: JSON.stringify({
           status: 'ready',
-          message: `${actionLabels[stepKey]} reset before re-request.`,
+          message: `${actionLabels[stepKey]} reset before restart.`,
         }),
       });
 
@@ -864,7 +873,7 @@ export default function App() {
     onStartNewSession: () => void startNewSession(),
     onTriggerAction: (actionKey: SessionActionKey, simulationMode?: AdapterSimulationMode) => void triggerAction(actionKey, simulationMode),
     onResetStep: (stepKey: WorkflowStepKey, status: WorkflowStepStatus, message: string) => void resetStep(stepKey, status, message),
-    onRestartStep: (stepKey: WorkflowStepKey) => void restartEvidenceStep(stepKey),
+    onRestartStep: (stepKey: WorkflowStepKey) => void restartWorkflowStep(stepKey),
     onSeedWalletCredential: (walletRole: SeedableWalletRole, credentialType: WalletCredentialType) => void seedWalletCredential(walletRole, credentialType),
   };
   const pages = [

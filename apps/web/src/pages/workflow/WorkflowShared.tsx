@@ -136,20 +136,24 @@ export function WalletCredentialCard({ credential }: { credential: WalletCredent
           <p className="supporting-copy wallet-offer-copy">
             Scan the QR code with a compatible wallet or open the OID4VCI deep link directly.
           </p>
-          <QrCodePanel value={credential.offer.qrCodeValue} alt={`${credential.label} OID4VCI offer`} />
-          <dl className="review-list compact-review-list wallet-offer-meta">
-            <div><dt>Exchange ID</dt><dd>{credential.offer.exchangeId ?? 'Pending'}</dd></div>
-            <div><dt>PIN</dt><dd>{credential.offer.userPin ?? 'Not required'}</dd></div>
-          </dl>
-          <div className="wallet-offer-actions">
-            <a className="primary-action-link" href={credential.offer.offerUri}>
-              Open OID4VCI offer
-            </a>
-            {credential.offer.referenceUri ? (
-              <a className="secondary-action-link" href={credential.offer.referenceUri} target="_blank" rel="noreferrer">
-                Open raw offer URL
-              </a>
-            ) : null}
+          <div className="pid-offer-grid">
+            <QrCodePanel value={credential.offer.qrCodeValue} alt={`${credential.label} OID4VCI offer`} />
+            <div className="pid-offer-details">
+              <dl className="review-list compact-review-list wallet-offer-meta">
+                <div><dt>Exchange ID</dt><dd>{credential.offer.exchangeId ?? 'Pending'}</dd></div>
+                <div><dt>PIN</dt><dd>{credential.offer.userPin ?? 'Not required'}</dd></div>
+              </dl>
+              <div className="wallet-offer-actions">
+                <a className="primary-action-link" href={credential.offer.offerUri}>
+                  Open OID4VCI deep-link
+                </a>
+                {credential.offer.referenceUri ? (
+                  <a className="secondary-action-link" href={credential.offer.referenceUri} target="_blank" rel="noreferrer">
+                    Open raw offer URL
+                  </a>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

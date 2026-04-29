@@ -337,6 +337,22 @@ function createPendingVatIssuanceSession(): OrchestrationSession {
       issuingOrganisation: attestation.issuingOrganisation,
       exchangeId: 'vat-exchange-1',
       status: 'pending',
+      walletCredential: {
+        credentialType: 'vat',
+        label: 'iGrant VAT attestation',
+        holderName: attestation.economicOperatorName,
+        issuerName: attestation.issuingOrganisation,
+        seededAt: '2026-04-22T10:06:00.000Z',
+        status: 'offer-created',
+        offer: {
+          protocol: 'oid4vci',
+          offerUri: 'openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Fvat-exchange-1',
+          qrCodeValue: 'openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Fvat-exchange-1',
+          referenceUri: 'https://issuer.example/offers/vat-exchange-1',
+          exchangeId: 'vat-exchange-1',
+          userPin: '1234',
+        },
+      },
     },
     message: 'VAT issuance started and is pending.',
   });
@@ -1261,6 +1277,212 @@ describe('App polling', () => {
     expect(screen.getByText('FI24681357')).toBeTruthy();
     expect(screen.getByText('Teemun Tomaatit Oy Tampere Operations')).toBeTruthy();
     expect(screen.getByText('Matched from the verified EUCC company before issuance.')).toBeTruthy();
+  });
+
+  it('hides the matched VAT attestation block while keeping issuance actions on the issuance page', async () => {
+    const currentSession = createReviewReadySession();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.endsWith('/health') && method === 'GET') {
+        return new Response(JSON.stringify({ status: 'ok', service: 'local-api' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/vendors') && method === 'GET') {
+        return new Response(JSON.stringify(vendorCatalog), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/sessions') && method === 'POST') {
+        return new Response(JSON.stringify(currentSession), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`Unhandled fetch ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await openJourneyPage('Issuance');
+
+    await screen.findByRole('button', { name: 'Submit VAT issuance' });
+    expect(screen.queryByText('Matched VAT attestation')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Person' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Company' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'PoA' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'EUCC' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Submit VAT issuance' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Restart issuance' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Refresh issuance status' })).toBeNull();
+  });
+
+  it('shows the VAT issuance QR code and exchange details when an offer is pending', async () => {
+    const currentSession = createPendingVatIssuanceSession();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.endsWith('/health') && method === 'GET') {
+        return new Response(JSON.stringify({ status: 'ok', service: 'local-api' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/vendors') && method === 'GET') {
+        return new Response(JSON.stringify(vendorCatalog), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/sessions') && method === 'POST') {
+        return new Response(JSON.stringify(currentSession), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`Unhandled fetch ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await openJourneyPage('Issuance');
+
+    expect(await screen.findByText('Issuance details')).toBeTruthy();
+    expect(screen.getAllByText('vat-exchange-1').length).toBeGreaterThan(0);
+    expect(screen.getByText('1234')).toBeTruthy();
+    expect(screen.getByText('iGrant VAT attestation')).toBeTruthy();
+    expect(screen.getByTestId('qr-code-panel').textContent).toContain('iGrant VAT attestation OID4VCI offer:openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Fvat-exchange-1');
+    expect(screen.getByRole('link', { name: 'Open OID4VCI deep-link' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Open raw offer URL' })).toBeTruthy();
+  });
+
+  it('restarts VAT issuance by resetting the step and immediately submitting a fresh issuance request', async () => {
+    let currentSession = createPendingVatIssuanceSession();
+    let cleanupCalls = 0;
+    let resetCalls = 0;
+    let issuanceActionCalls = 0;
+
+    const restartedSession = updateSessionStep(createReviewReadySession(), {
+      step: 'vatIssuance',
+      status: 'pending',
+      data: {
+        vatId: 'FI24681357',
+        administrativeUnitName: 'Restarted VAT issuance unit',
+        administrativeUnitType: 'head_office',
+        issuingCountry: 'FI',
+        issuingOrganisation: 'Finnish Tax Administration',
+        exchangeId: 'vat-exchange-2',
+        status: 'pending',
+        walletCredential: {
+          credentialType: 'vat',
+          label: 'iGrant VAT attestation',
+          holderName: 'Teemun Tomaatit Oy',
+          issuerName: 'Finnish Tax Administration',
+          seededAt: '2026-04-22T10:08:00.000Z',
+          status: 'offer-created',
+          offer: {
+            protocol: 'oid4vci',
+            offerUri: 'openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Fvat-exchange-2',
+            qrCodeValue: 'openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Fvat-exchange-2',
+            referenceUri: 'https://issuer.example/offers/vat-exchange-2',
+            exchangeId: 'vat-exchange-2',
+            userPin: '5678',
+          },
+        },
+      },
+      message: 'VAT issuance restarted and is pending.',
+    });
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.endsWith('/health') && method === 'GET') {
+        return new Response(JSON.stringify({ status: 'ok', service: 'local-api' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/vendors') && method === 'GET') {
+        return new Response(JSON.stringify(vendorCatalog), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/sessions') && method === 'POST') {
+        return new Response(JSON.stringify(currentSession), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/sessions/session-igrant/steps/vatIssuance/history') && method === 'DELETE') {
+        cleanupCalls += 1;
+
+        return new Response(null, { status: 204 });
+      }
+
+      if (url.includes('/api/sessions/session-igrant/steps/vatIssuance') && method === 'PATCH') {
+        resetCalls += 1;
+        currentSession = updateSessionStep(currentSession, {
+          step: 'vatIssuance',
+          status: 'ready',
+          message: 'VAT issuance reset before restart.',
+        });
+
+        return new Response(JSON.stringify(currentSession), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/sessions/session-igrant/actions/vatIssuance') && method === 'POST') {
+        issuanceActionCalls += 1;
+        currentSession = restartedSession;
+
+        return new Response(JSON.stringify(currentSession), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`Unhandled fetch ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await openJourneyPage('Issuance');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Restart issuance' }));
+
+    await waitFor(() => {
+      expect(cleanupCalls).toBe(1);
+      expect(resetCalls).toBe(1);
+      expect(issuanceActionCalls).toBe(1);
+      expect(screen.getAllByText('vat-exchange-2').length).toBeGreaterThan(0);
+      expect(screen.getByText('5678')).toBeTruthy();
+    });
   });
 
   it('assembles the review payload automatically when the review step opens', async () => {

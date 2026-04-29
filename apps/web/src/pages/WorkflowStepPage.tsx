@@ -13,7 +13,7 @@ import { actionLabels, statusNotes } from '../workflowUi.js';
 import { WorkflowEvidenceSection } from './workflow/WorkflowEvidenceSection.js';
 import { WorkflowHistorySection } from './workflow/WorkflowHistorySection.js';
 import { WorkflowReviewSection } from './workflow/WorkflowReviewSection.js';
-import { WorkflowQrEvidenceCard } from './workflow/WorkflowShared.js';
+import { WalletCredentialCard, WorkflowQrEvidenceCard, formatTimestamp } from './workflow/WorkflowShared.js';
 import type { JourneyNavigationItem, JourneyPageId, WorkflowPageProps } from './workflow/types.js';
 
 type WorkflowStepPageProps = WorkflowPageProps & {
@@ -65,6 +65,8 @@ export function WorkflowStepPage({
       : stepKey === 'eucc'
         ? session?.eucc.error?.message
         : undefined;
+  const issuanceResult = stepKey === 'vatIssuance' ? session?.vatIssuance.data : undefined;
+  const issuanceWalletCredential = issuanceResult?.walletCredential;
   const stepRecordView = stepKey === 'pid'
     ? (() => {
         const pidRecord: PidRecord | undefined = session?.pid.data?.record;
@@ -233,6 +235,31 @@ export function WorkflowStepPage({
               />
             ) : null}
 
+            {stepKey === 'vatIssuance' && issuanceResult ? (
+              <div className="step-panel-content issuance-detail-section">
+                <div className="review-block">
+                  <div className="panel-heading-inline">
+                    <strong>Issuance details</strong>
+                    <span className="step-state">{issuanceResult.status}</span>
+                  </div>
+                  <dl className="review-list compact-review-list">
+                    <div><dt>VAT ID</dt><dd>{issuanceResult.vatId}</dd></div>
+                    <div><dt>Exchange ID</dt><dd>{issuanceResult.exchangeId ?? 'Pending'}</dd></div>
+                    <div><dt>Administrative unit</dt><dd>{issuanceResult.administrativeUnitName}</dd></div>
+                    <div><dt>Issuer</dt><dd>{issuanceResult.issuingOrganisation}</dd></div>
+                    <div><dt>Country</dt><dd>{issuanceResult.issuingCountry}</dd></div>
+                    <div><dt>Issued at</dt><dd>{formatTimestamp(issuanceResult.issuedAt)}</dd></div>
+                  </dl>
+                </div>
+
+                {issuanceWalletCredential ? (
+                  <ul className="wallet-list">
+                    <WalletCredentialCard credential={issuanceWalletCredential} />
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="step-actions">
               {isSucceededEvidenceStep ? (
                 <button
@@ -256,14 +283,24 @@ export function WorkflowStepPage({
               ) : (
                 <>
                   {stepKey === 'vatIssuance' ? (
-                    <button
-                      type="button"
-                      className="action-button"
-                      onClick={() => onTriggerAction('vatIssuance')}
-                      disabled={!canTriggerVendorActions || session?.review.status !== 'succeeded' || currentStep?.status === 'pending'}
-                    >
-                      Submit VAT issuance
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="action-button"
+                        onClick={() => onTriggerAction('vatIssuance')}
+                        disabled={!canTriggerVendorActions || session?.review.status !== 'succeeded' || currentStep?.status === 'pending'}
+                      >
+                        Submit VAT issuance
+                      </button>
+                      <button
+                        type="button"
+                        className="action-button action-button-secondary"
+                        onClick={() => onRestartStep('vatIssuance')}
+                        disabled={!session || !canTriggerVendorActions || session?.review.status !== 'succeeded'}
+                      >
+                        Restart issuance
+                      </button>
+                    </>
                   ) : null}
                   {!isReviewStep ? (
                     <button
@@ -297,16 +334,6 @@ export function WorkflowStepPage({
                   ) : null}
                 </>
               )}
-              {stepKey === 'vatIssuance' ? (
-                <button
-                  type="button"
-                  className="action-button action-button-secondary"
-                  onClick={() => onTriggerAction('issuanceStatus')}
-                  disabled={!canTriggerVendorActions || currentStep?.status !== 'pending'}
-                >
-                  Refresh issuance status
-                </button>
-              ) : null}
             </div>
           </section>
 
