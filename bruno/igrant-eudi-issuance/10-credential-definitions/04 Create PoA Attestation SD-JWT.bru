@@ -1,0 +1,92 @@
+meta {
+  name: 04 Create PoA Attestation SD-JWT
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v2/config/digital-wallet/openid/sdjwt/credential-definition
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "label": "PoA Attestation",
+    "trustAnchor": "did:key",
+    "version": "version_01",
+    "kid": "{{issuerKid}}",
+    "enforceWUA": false,
+    "credentialDefinitions": [
+      {
+        "label": "PoA Attestation - SD-JWT",
+        "expirationInDays": 365,
+        "supportRevocation": true,
+        "revocationMethod": "status_list",
+        "enforceCredentialUniqueness": false,
+        "supportCredentialReissuance": false,
+        "credentialBindingMethods": ["did:key", "jwk", "x5c", "kid"],
+        "authorizationRequestType": "authorization_details",
+        "display": {
+          "name": "PoA Attestation",
+          "description": "Mock power of attorney attestation for personal-wallet testing.",
+          "backgroundColor": "#EEF6EA",
+          "textColor": "#17301B"
+        },
+        "credentialResponseInterval": 5,
+        "credentialFormat": "dc+sd-jwt",
+        "vct": "urn:we-build:credential:poa-attestation:1",
+        "claims": {
+          "claims": [
+            { "path": ["date_of_execution"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["euid_reference"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["principal_full_name"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["principal_date_of_birth"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["principal_identification_document_kind"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["principal_identification_document_number"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["principal_place_of_birth"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["principal_full_address"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["company_statutory_full_name"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["company_business_register_name"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["company_business_register_location"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["company_kind_of_legal_entity"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["company_jurisdiction"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["company_registered_office"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["attorney_full_name"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["attorney_date_of_birth"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["attorney_identification_document_kind"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["attorney_identification_document_number"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["attorney_place_of_birth"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["attorney_full_address"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["scope_of_representation_powers"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["scope_of_representation_power_of_substitution"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["validity_period_valid_from"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["validity_period_valid_until"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["applicable_law_jurisdiction"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["signing_place"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["signing_date"], "mandatory": true, "limitDisclosure": true }
+          ]
+        },
+        "validationPath": "$"
+      }
+    ]
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const credentialDefinitionId = body?.credentialDefinitionId
+    || body?.credentialDefinition?.id
+    || body?.credentialDefinition?.credentialDefinitionId
+    || body?.id;
+
+  if (credentialDefinitionId) {
+    bru.setVar('poaCredentialDefinitionIdSdJwt', credentialDefinitionId);
+  }
+}
+
+docs {
+  Creates the mock PoA attestation credential definition in SD-JWT format for the app's personal-wallet testing flow.
+  Claim structure is aligned with schemas/poa-attestation-credential.schema.json and mock-data/poa-attestation-credential.mock.json.
+  The default environment leaves issuerKid empty for smoke testing. Set it explicitly if your iGrant tenant requires key selection.
+}

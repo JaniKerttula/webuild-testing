@@ -1,0 +1,73 @@
+meta {
+  name: 03 Create Test PID SD-JWT
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v2/config/digital-wallet/openid/sdjwt/credential-definition
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "label": "Test PID",
+    "trustAnchor": "did:key",
+    "version": "version_01",
+    "kid": "{{issuerKid}}",
+    "enforceWUA": false,
+    "credentialDefinitions": [
+      {
+        "label": "Test PID - SD-JWT",
+        "expirationInDays": 365,
+        "supportRevocation": true,
+        "revocationMethod": "status_list",
+        "enforceCredentialUniqueness": false,
+        "supportCredentialReissuance": false,
+        "credentialBindingMethods": ["did:key", "jwk", "x5c", "kid"],
+        "authorizationRequestType": "authorization_details",
+        "display": {
+          "name": "Test PID",
+          "description": "Mock person identification data for local EUDI issuance testing.",
+          "backgroundColor": "#F7F2EA",
+          "textColor": "#302012"
+        },
+        "credentialResponseInterval": 5,
+        "credentialFormat": "dc+sd-jwt",
+        "vct": "urn:we-build:credential:test-pid:1",
+        "claims": {
+          "claims": [
+            { "path": ["givenName"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["familyName"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["ageOver18"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["dateOfBirth"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["countryOfBirth"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["nationality"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["residentCountry"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["gender"], "mandatory": true, "limitDisclosure": true }
+          ]
+        },
+        "validationPath": "$"
+      }
+    ]
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const credentialDefinitionId = body?.credentialDefinitionId
+    || body?.credentialDefinition?.id
+    || body?.credentialDefinition?.credentialDefinitionId
+    || body?.id;
+
+  if (credentialDefinitionId) {
+    bru.setVar('testPidCredentialDefinitionIdSdJwt', credentialDefinitionId);
+  }
+}
+
+docs {
+  Creates the mock PID credential definition in SD-JWT format for the app's personal-wallet testing flow.
+  Claim structure is aligned with mock-data/pid-credential.mock.json.
+  The default environment leaves issuerKid empty for smoke testing. Set it explicitly if your iGrant tenant requires key selection.
+}

@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "iGrant EUDI Issuance",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

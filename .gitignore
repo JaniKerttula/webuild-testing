@@ -1,0 +1,19 @@
+node_modules
+**/node_modules
+dist
+coverage
+*.log
+.vite
+
+# Environment variables
+.env
+.env.local
+**/Local.bru
+
+# IDE specific files
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+Thumbs.db

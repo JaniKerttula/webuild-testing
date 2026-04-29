@@ -1,0 +1,103 @@
+meta {
+  name: 01 Issue Test PID InTime SD-JWT
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v2/config/digital-wallet/openid/sdjwt/credential/issue
+  body: json
+  auth: inherit
+}
+
+script:pre-request {
+  const baseUrl = bru.getEnvVar('baseUrl');
+  const apiKey = bru.getEnvVar('apiKey');
+  const credentialDefinitionId = bru.getEnvVar('testPidCredentialDefinitionIdSdJwt');
+
+  if (!baseUrl || !apiKey || !credentialDefinitionId) {
+    throw new Error('baseUrl, apiKey, and testPidCredentialDefinitionIdSdJwt must be set before issuing Test PID.');
+  }
+
+  const definitionResponse = await bru.sendRequest({
+    method: 'GET',
+    url: `${baseUrl}/v2/config/digital-wallet/openid/sdjwt/credential-definition/${credentialDefinitionId}`,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `ApiKey ${apiKey}`,
+    },
+  });
+
+  const credentialEntry = definitionResponse?.data?.credentialDefinition?.credentialDefinitions?.[0];
+  const credentialEntryId = credentialEntry?.id ?? credentialEntry?.credentialConfigurationId;
+
+  if (!credentialEntryId) {
+    throw new Error(`Credential definition ${credentialDefinitionId} did not expose a credential entry id.`);
+  }
+
+  bru.setVar('testPidCredentialEntryIdSdJwt', credentialEntryId);
+
+  const body = req.getBody();
+  body.credentialDefinitionId = credentialDefinitionId;
+  body.credentials[0].id = credentialEntryId;
+  req.setBody(body);
+}
+
+body:json {
+  {
+    "issuanceMode": "InTime",
+    "urlScheme": "openid-credential-offer://",
+    "credentialDefinitionId": "{{testPidCredentialDefinitionIdSdJwt}}",
+    "credentials": [
+      {
+        "id": "{{testPidCredentialEntryIdSdJwt}}",
+        "claims": {
+          "givenName": "Teemu",
+          "familyName": "Testi",
+          "ageOver18": true,
+          "dateOfBirth": "1991-04-12",
+          "countryOfBirth": "FI",
+          "nationality": "FI",
+          "residentCountry": "FI",
+          "gender": 1
+        }
+      }
+    ],
+    "userPin": ""
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const credentialExchangeId = body?.credentialExchangeId
+    || body?.credentialHistory?.credentialExchangeId
+    || body?.credentialHistory?.CredentialExchangeId
+    || body?.CredentialExchangeId;
+  const credentialOffer = body?.credentialOfferUri
+    || body?.credential_offer_uri
+    || body?.credentialOffer
+    || body?.credential_offer
+    || body?.credentialHistory?.credentialOfferUri
+    || body?.credentialHistory?.credential_offer_uri
+    || body?.credentialHistory?.credentialOffer
+    || body?.credentialHistory?.credential_offer;
+
+  if (credentialExchangeId) {
+    bru.setVar('credentialExchangeId', credentialExchangeId);
+  }
+
+  if (credentialOffer) {
+    bru.setVar('credentialOffer', typeof credentialOffer === 'string' ? credentialOffer : JSON.stringify(credentialOffer));
+  }
+}
+
+docs {
+  Starts the Test PID InTime issuance flow using the same credential definition family as the app.
+
+  Required variables:
+  - testPidCredentialDefinitionIdSdJwt
+
+  The request resolves testPidCredentialEntryIdSdJwt automatically from:
+  GET {{baseUrl}}/v2/config/digital-wallet/openid/sdjwt/credential-definition/{{testPidCredentialDefinitionIdSdJwt}}
+}

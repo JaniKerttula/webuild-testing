@@ -1,0 +1,15 @@
+meta {
+  name: 01 Read Issuance History By Exchange ID
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v2/config/digital-wallet/openid/sdjwt/credential/history/{{credentialExchangeId}}
+  body: none
+  auth: inherit
+}
+
+docs {
+  Reads a single issuance exchange and is the main fallback when webhooks are not configured.
+}

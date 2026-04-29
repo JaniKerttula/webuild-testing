@@ -1,0 +1,25 @@
+{
+  "name": "we-build-testing",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "packages/domain"
+  ],
+  "scripts": {
+    "dev": "dotenv -e .env -- concurrently -n web,api -c cyan,green \"npm run dev -w @we-build/web\" \"npm run dev -w @we-build/api\"",
+    "dev:web": "dotenv -e .env -- npm run dev -w @we-build/web",
+    "dev:api": "dotenv -e .env -- npm run dev -w @we-build/api",
+    "build": "npm run build -w @we-build/domain && npm run build -w @we-build/web && npm run build -w @we-build/api",
+    "check": "npm run check -w @we-build/domain && npm run check -w @we-build/web && npm run check -w @we-build/api",
+    "test": "npm run test -w @we-build/domain && npm run test -w @we-build/api",
+    "verify:api": "node scripts/verify-api.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "dotenv-cli": "^7.4.4"
+  }
+}

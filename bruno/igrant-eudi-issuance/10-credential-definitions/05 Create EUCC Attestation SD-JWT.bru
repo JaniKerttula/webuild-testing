@@ -1,0 +1,88 @@
+meta {
+  name: 05 Create EUCC Attestation SD-JWT
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/v2/config/digital-wallet/openid/sdjwt/credential-definition
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "label": "EUCC Attestation",
+    "trustAnchor": "did:key",
+    "version": "version_01",
+    "kid": "{{issuerKid}}",
+    "enforceWUA": false,
+    "credentialDefinitions": [
+      {
+        "label": "EUCC Attestation - SD-JWT",
+        "expirationInDays": 365,
+        "supportRevocation": true,
+        "revocationMethod": "status_list",
+        "enforceCredentialUniqueness": false,
+        "supportCredentialReissuance": false,
+        "credentialBindingMethods": ["did:key", "jwk", "x5c", "kid"],
+        "authorizationRequestType": "authorization_details",
+        "display": {
+          "name": "EUCC Attestation",
+          "description": "Mock European Company Certificate attestation for company-wallet testing.",
+          "backgroundColor": "#EAF3F8",
+          "textColor": "#173042"
+        },
+        "credentialResponseInterval": 5,
+        "credentialFormat": "dc+sd-jwt",
+        "vct": "urn:we-build:credential:eucc-attestation:1",
+        "claims": {
+          "claims": [
+            { "path": ["legal_person_name"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["legal_person_id"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["legal_form_type"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["registration_member_state"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["registered_address", "registered_address_full_address"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["registered_address", "registered_address_care_of"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["registered_address", "registered_address_thoroughfare"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["registered_address", "registered_address_locator_designator"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["registered_address", "registered_address_post_code"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["registered_address", "registered_address_post_name"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["registered_address", "registered_address_post_office_box"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["registered_address", "registered_address_locator_name"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["registered_address", "registered_address_admin_unit_level_1"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["registered_address", "registered_address_admin_unit_level_2"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["registration_date"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["share_capital"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["legal_person_status"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["legal_person_activity"], "mandatory": true, "limitDisclosure": true },
+            { "path": ["legal_person_duration"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["contact_point", "contact_email"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["contact_point", "contact_page"], "mandatory": false, "limitDisclosure": true },
+            { "path": ["legal_representative"], "mandatory": true, "limitDisclosure": true }
+          ]
+        },
+        "validationPath": "$"
+      }
+    ]
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const credentialDefinitionId = body?.credentialDefinitionId
+    || body?.credentialDefinition?.id
+    || body?.credentialDefinition?.credentialDefinitionId
+    || body?.id;
+
+  if (credentialDefinitionId) {
+    bru.setVar('euccCredentialDefinitionIdSdJwt', credentialDefinitionId);
+  }
+}
+
+docs {
+  Creates the mock EUCC attestation credential definition in SD-JWT format for the app's company-wallet testing flow.
+  Claim structure is aligned with schemas/eucc-attestation-credential.schema.json and mock-data/eucc-attestation-credential.mock.json.
+  Nested registered_address claims are declared explicitly, while legal_representative is left as an array-valued claim for the current fixture shape.
+  The default environment leaves issuerKid empty for smoke testing. Set it explicitly if your iGrant tenant requires key selection.
+}

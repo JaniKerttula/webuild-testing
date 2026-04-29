@@ -1,0 +1,78 @@
+meta {
+  name: 02 Create VAT Attestation JWT VC
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v2/config/digital-wallet/openid/sdjwt/credential-definition
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "label": "VAT Attestation",
+    "trustAnchor": "did:key",
+    "version": "version_01",
+    "kid": "{{issuerKid}}",
+    "enforceWUA": false,
+    "credentialDefinitions": [
+      {
+        "credentialFormat": "jwt_vc_json",
+        "type": ["VerifiableCredential", "VatAttestationCredential"],
+        "credentialDefinition": {
+          "label": "VAT Attestation - JWT VC",
+          "expirationInDays": 365,
+          "supportRevocation": true,
+          "revocationMethod": "status_list_2021",
+          "enforceCredentialUniqueness": false,
+          "supportCredentialReissuance": false,
+          "credentialBindingMethods": ["did:key", "jwk", "x5c", "kid"],
+          "authorizationRequestType": "authorization_details",
+          "display": {
+            "name": "VAT Attestation",
+            "description": "VAT identification attestation for an administrative unit of an economic operator.",
+            "backgroundColor": "#EEF4FA",
+            "textColor": "#18324A"
+          },
+          "credentialResponseInterval": 5,
+          "credentialFormat": "jwt_vc_json",
+          "claims": [
+            { "path": ["credentialSubject", "VAT_ID"], "mandatory": true },
+            { "path": ["credentialSubject", "Administrative_Unit_Name"], "mandatory": true },
+            { "path": ["credentialSubject", "Administrative_Unit_Type"], "mandatory": false },
+            { "path": ["credentialSubject", "Administrative_Unit_Address"], "mandatory": false },
+            { "path": ["credentialSubject", "Validity_Area_Limitation"], "mandatory": false },
+            { "path": ["credentialSubject", "Validity_Period"], "mandatory": true },
+            { "path": ["credentialSubject", "Economic_Activity_Type"], "mandatory": false },
+            { "path": ["credentialSubject", "Economic_Operator"], "mandatory": true },
+            { "path": ["credentialSubject", "Issuer"], "mandatory": true }
+          ],
+          "validationPath": "$.vc.credentialSubject"
+        }
+      }
+    ]
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const credentialDefinitionId = body?.credentialDefinitionId
+    || body?.credentialDefinition?.id
+    || body?.credentialDefinition?.credentialDefinitionId
+    || body?.id;
+
+  if (credentialDefinitionId) {
+    bru.setVar('orgCredentialDefinitionIdJwtVc', credentialDefinitionId);
+  }
+}
+
+docs {
+  Creates the organisational VAT attestation credential definition in JWT VC format.
+  The live iGrant schema requires both an outer credentialFormat discriminator and a nested credentialDefinition object for jwt_vc_json entries.
+  For JWT VC, the nested claims field is a direct list rather than the SD-JWT-style {"claims": [...]} wrapper.
+  JWT VC claim paths must be rooted at credentialSubject so issuer metadata advertises wallet-compatible claims.
+  Claim structure is aligned with schemas/vat-attestation-credential.schema.json.
+  The default environment leaves issuerKid empty for smoke testing. Set it explicitly if your iGrant tenant requires key selection.
+}

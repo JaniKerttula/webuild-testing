@@ -1,0 +1,31 @@
+headers {
+  Accept: application/json
+  Content-Type: application/json
+}
+
+auth {
+  mode: apikey
+}
+
+auth:apikey {
+  key: Authorization
+  value: ApiKey {{apiKey}}
+  placement: header
+}
+vars:pre-request {
+  baseUrl: https://api.igrant.io
+}
+
+docs {
+  Bruno collection for the first iGrant Product API exercise.
+  
+  Scope:
+  - Personal EmployeeIdentityCredential as SD-JWT VC in InTime mode
+  - Organisational VatAttestationCredential as JWT VC in InTime and Deferred modes
+  - Issuance history reads for diagnosis and progress tracking
+  - Bruno auth mode uses API key auth to populate the Authorization header
+  
+  Source documents in this repository:
+  - docs/igrant-product-api-plan.md
+  - schemas/vat-attestation-credential.schema.json
+}

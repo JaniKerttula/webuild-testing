@@ -1,0 +1,36 @@
+meta {
+  name: 01 Start VAT Attestation Deferred JWT VC
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v2/config/digital-wallet/openid/sdjwt/credential/issue
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "issuanceMode": "Deferred",
+    "urlScheme": "openid-credential-offer://",
+    "credentialDefinitionId": "{{orgCredentialDefinitionIdJwtVc}}",
+    "userPin": ""
+  }
+}
+
+script:post-response {
+  const body = res.getBody();
+  const credentialExchangeId = body?.credentialExchangeId
+    || body?.credentialHistory?.credentialExchangeId
+    || body?.credentialHistory?.CredentialExchangeId
+    || body?.CredentialExchangeId;
+
+  if (credentialExchangeId) {
+    bru.setVar('credentialExchangeId', credentialExchangeId);
+  }
+}
+
+docs {
+  Starts the deferred VAT attestation issuance flow and stores the exchange id.
+}

@@ -1,0 +1,144 @@
+meta {
+  name: 01 Issue VAT Attestation InTime JWT VC
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v2/config/digital-wallet/openid/sdjwt/credential/issue
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "issuanceMode": "InTime",
+    "urlScheme": "openid-credential-offer://",
+    "credentialDefinitionId": "{{orgCredentialDefinitionIdJwtVc}}",
+    "credentials": [
+      {
+        "id": "{{orgCredentialEntryIdJwtVc}}",
+        "credentialSubject": {
+          "credentialSubject": {
+            "VAT_ID": "FI24681357",
+            "Administrative_Unit_Name": "Teemun Tomaatit Oy Tampere Operations",
+            "Administrative_Unit_Type": "head_office",
+            "Administrative_Unit_Address": {
+              "thoroughfare": "Tomaattikuja 7",
+              "post_code": "33100",
+              "post_name": "Tampere",
+              "admin_unit_L1": "Pirkanmaa",
+              "admin_unit_L2": "Finland"
+            },
+            "Validity_Area_Limitation": [],
+            "Validity_Period": [
+              {
+                "VAT_ID_start_date": "2020-03-15"
+              }
+            ],
+            "Economic_Activity_Type": [
+              {
+                "Economic_Activity_Type_Nomenclature": "NACE",
+                "Economic_Activity_Type_ID": "01.13",
+                "Economic_Activity_Type_Description": [
+                  {
+                    "Language": "en",
+                    "Description": "Growing of vegetables and melons, roots and tubers"
+                  },
+                  {
+                    "Language": "fi",
+                    "Description": "Vihannesten ja melonien viljely"
+                  }
+                ]
+              }
+            ],
+            "Economic_Operator": {
+              "EUID": "FIHPR.2468135-7",
+              "Economic_Operator_Name": "Teemun Tomaatit Oy"
+            },
+            "Issuer": {
+              "Issuing_country": "FI",
+              "Issuing_Organisation": "Finnish Tax Administration",
+              "Issuing_date": "2026-04-21",
+              "Attestation_issuing_Organisation": "Finnish Tax Administration Digital Credentials Service"
+            }
+          }
+        }
+        
+      }
+    ],
+    "userPin": ""
+  }
+}
+
+script:pre-request {
+  const baseUrl = bru.getEnvVar('baseUrl');
+  const apiKey = bru.getEnvVar('apiKey');
+  const credentialDefinitionId = bru.getEnvVar('orgCredentialDefinitionIdJwtVc');
+  
+  if (!baseUrl || !apiKey || !credentialDefinitionId) {
+    throw new Error('baseUrl, apiKey, and orgCredentialDefinitionIdJwtVc must be set before issuing VAT Attestation.');
+  }
+  
+  const definitionResponse = await bru.sendRequest({
+    method: 'GET',
+    url: `${baseUrl}/v2/config/digital-wallet/openid/sdjwt/credential-definition/${credentialDefinitionId}`,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `ApiKey ${apiKey}`,
+    },
+  });
+  
+  const credentialEntry = definitionResponse?.data?.credentialDefinition?.credentialDefinitions?.[0];
+  const credentialEntryId = credentialEntry?.id ?? credentialEntry?.credentialConfigurationId;
+  
+  if (!credentialEntryId) {
+    throw new Error(`Credential definition ${credentialDefinitionId} did not expose a credential entry id.`);
+  }
+  
+  bru.setVar('orgCredentialEntryIdJwtVc', credentialEntryId);
+  
+  const body = req.getBody();
+  body.credentialDefinitionId = credentialDefinitionId;
+  body.credentials[0].id = credentialEntryId;
+  req.setBody(body);
+}
+
+script:post-response {
+  const body = res.getBody();
+  const credentialExchangeId = body?.credentialExchangeId
+    || body?.credentialHistory?.credentialExchangeId
+    || body?.credentialHistory?.CredentialExchangeId
+    || body?.CredentialExchangeId;
+  const credentialOffer = body?.credentialOfferUri
+    || body?.credential_offer_uri
+    || body?.credentialOffer
+    || body?.credential_offer
+    || body?.credentialHistory?.credentialOfferUri
+    || body?.credentialHistory?.credential_offer_uri
+    || body?.credentialHistory?.credentialOffer
+    || body?.credentialHistory?.credential_offer;
+  
+  if (credentialExchangeId) {
+    bru.setVar('credentialExchangeId', credentialExchangeId);
+  }
+  
+  if (credentialOffer) {
+    bru.setVar('credentialOffer', typeof credentialOffer === 'string' ? credentialOffer : JSON.stringify(credentialOffer));
+  }
+}
+
+docs {
+  Starts the organisational VAT attestation InTime issuance flow with the repository mock VAT payload.
+  
+  Required variables:
+  - orgCredentialDefinitionIdJwtVc
+  
+  The request resolves orgCredentialEntryIdJwtVc automatically from:
+  GET {{baseUrl}}/v2/config/digital-wallet/openid/sdjwt/credential-definition/{{orgCredentialDefinitionIdJwtVc}}
+  
+  Live sandbox note: jwt_vc_json issuance currently requires `credentials[].credentialSubject`
+  as a sibling field. `claims.credentialSubject` alone still returns
+  `credential subject is required property`.
+}
