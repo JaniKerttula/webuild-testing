@@ -60,8 +60,25 @@ body {
   gap: 0.4rem;
 }
 
+.workflow-breadcrumb-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 .workflow-breadcrumb.current-workflow-breadcrumb {
   color: var(--accent);
+}
+
+.workflow-breadcrumb.opened-workflow-breadcrumb {
+  color: var(--text-strong);
+}
+
+.workflow-breadcrumb.inactive-workflow-breadcrumb {
+  color: var(--muted-text);
 }
 
 .workflow-breadcrumb-separator {
@@ -106,6 +123,13 @@ h4 {
   align-items: center;
 }
 
+.brand-title-button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
 .brand-title {
   color: var(--accent);
   font-size: 28px;
@@ -124,9 +148,7 @@ a {
   text-decoration: none;
 }
 
-.language-link,
-.top-navigation-link,
-.top-navigation-button {
+.language-link {
   color: var(--text-strong);
 }
 
@@ -140,39 +162,6 @@ a {
 
 .current-language {
   color: var(--accent);
-}
-
-.top-navigation {
-  background: var(--surface);
-  border-bottom: 1px solid var(--page-border);
-}
-
-.top-navigation-inner {
-  display: flex;
-  align-items: center;
-}
-
-.top-navigation-link,
-.top-navigation-button {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  margin-right: 32px;
-  padding: 4px 0;
-  font-size: 16px;
-}
-
-.top-navigation-button {
-  border: 0;
-  background: transparent;
-  font: inherit;
-  cursor: pointer;
-}
-
-.top-navigation-button:disabled {
-  color: var(--muted-text);
-  cursor: default;
-  opacity: 0.6;
 }
 
 .current-section {
@@ -227,6 +216,10 @@ a {
 
 .intro-card-content {
   min-width: 0;
+}
+
+.intro-card-actions {
+  margin-top: 20px;
 }
 
 .frontpage-section {
@@ -314,92 +307,6 @@ a {
   margin-top: 24px;
 }
 
-.journey-progress {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 16px;
-  align-items: start;
-  margin-bottom: 24px;
-}
-
-.journey-progress-track {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 12px;
-}
-
-.journey-progress-step,
-.journey-nav-button {
-  border: 1px solid var(--page-border);
-  background: var(--surface);
-  color: var(--text-strong);
-  font: inherit;
-  cursor: pointer;
-}
-
-.journey-progress-step {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 88px;
-  padding: 14px;
-  text-align: left;
-  box-shadow: var(--shadow-soft);
-}
-
-.journey-progress-step[data-state='succeeded'] {
-  border-color: #6f9d59;
-}
-
-.journey-progress-step[data-state='pending'] {
-  border-color: #d0a13d;
-}
-
-.journey-progress-step[data-state='failed'] {
-  border-color: #b85757;
-}
-
-.current-journey-step {
-  border-color: var(--accent);
-  background: linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
-}
-
-.journey-progress-index {
-  display: inline-flex;
-  flex: 0 0 36px;
-  height: 36px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #ffffff;
-  font-weight: 600;
-}
-
-.journey-progress-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.journey-progress-copy span {
-  color: var(--muted-text);
-  font-size: 0.95rem;
-}
-
-.journey-nav-button {
-  min-width: 110px;
-  min-height: 48px;
-  padding: 0 16px;
-}
-
-.journey-nav-button:disabled,
-.journey-progress-step:disabled {
-  cursor: default;
-  opacity: 0.55;
-}
-
 .step-error-box {
   margin-top: 16px;
 }
@@ -412,14 +319,8 @@ a {
   margin-top: 20px;
 }
 
-@media (max-width: 960px) {
-  .journey-progress {
-    grid-template-columns: 1fr;
-  }
-
-  .journey-nav-button {
-    width: 100%;
-  }
+.workflow-step-layout {
+  margin: 0 auto 20px;
 }
 
 .frontpage-card-head,
@@ -1065,7 +966,6 @@ a {
 
 @media (max-width: 760px) {
   .site-header-inner,
-  .top-navigation-inner,
   .section-intro,
   .service-grid,
   .wallet-grid,
@@ -1096,7 +996,7 @@ a {
   }
 
   .language-link,
-  .top-navigation-link {
+  .action-button {
     font-size: 18px;
   }
 

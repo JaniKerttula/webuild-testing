@@ -13,7 +13,7 @@ import {
   type WorkflowStepStatus,
 } from '@we-build/domain';
 
-import { AppShell, type NavigationItem } from './components/AppShell.js';
+import { AppShell } from './components/AppShell.js';
 import { LandingPage } from './pages/LandingPage.js';
 import { WorkflowStepPage } from './pages/WorkflowStepPage.js';
 import { actionLabels } from './workflowUi.js';
@@ -93,6 +93,7 @@ export default function App() {
   const [vendorOptions, setVendorOptions] = useState<VendorDefinition[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<VendorId>('igrant-sandbox');
   const [currentPageId, setCurrentPageId] = useState<JourneyPageId>('landing');
+  const [openedPageIds, setOpenedPageIds] = useState<JourneyPageId[]>([]);
   const [session, setSession] = useState<OrchestrationSession | null>(null);
   const [sessionState, setSessionState] = useState<SessionState>({
     status: 'idle',
@@ -131,6 +132,18 @@ export default function App() {
     if (pollControllerRef.current[stepKey] === controller) {
       pollControllerRef.current[stepKey] = null;
     }
+  }
+
+  function navigateToPage(pageId: JourneyPageId): void {
+    setCurrentPageId(pageId);
+
+    if (pageId === 'landing') {
+      return;
+    }
+
+    setOpenedPageIds((currentOpenedPages) => (
+      currentOpenedPages.includes(pageId) ? currentOpenedPages : [...currentOpenedPages, pageId]
+    ));
   }
 
   async function deleteStepHistory(sessionId: string, stepKey: PollableStepKey): Promise<void> {
@@ -237,6 +250,8 @@ export default function App() {
     const pendingHistorySteps = getPendingRemoteHistorySteps(sessionSnapshot);
 
     invalidatePolling();
+    setOpenedPageIds([]);
+    setCurrentPageId('landing');
     setSessionState({
       status: 'loading',
       detail: 'Creating a new session in the local API.',
@@ -839,17 +854,6 @@ export default function App() {
       ...item,
       disabled: isJourneyPageEnabled(session, item.id) === false,
     }));
-  const navigationItems: NavigationItem[] = [
-    {
-      id: 'landing',
-      label: 'Landing',
-    },
-    ...stepPages.map((item) => ({
-      id: item.id,
-      label: item.label,
-      disabled: item.disabled,
-    })),
-  ];
   const firstEnabledStepPage = stepPages.find((page) => !page.disabled)?.id ?? 'landing';
   const workflowPageProps = {
     apiBaseUrl,
@@ -859,7 +863,11 @@ export default function App() {
     session,
     sessionState,
     health,
-    onVendorChange: setSelectedVendor,
+    onVendorChange: (vendorId: VendorId) => {
+      setOpenedPageIds([]);
+      setCurrentPageId('landing');
+      setSelectedVendor(vendorId);
+    },
     onRefreshSession: () => void refreshSession(selectedVendor),
     onStartNewSession: () => void startNewSession(),
     onTriggerAction: (actionKey: SessionActionKey, simulationMode?: AdapterSimulationMode) => void triggerAction(actionKey, simulationMode),
@@ -874,8 +882,8 @@ export default function App() {
         <LandingPage
           {...workflowPageProps}
           stepPages={stepPages}
-          onNavigate={setCurrentPageId}
-          onStartWorkflow={() => setCurrentPageId(firstEnabledStepPage)}
+          onNavigate={navigateToPage}
+          onStartWorkflow={() => navigateToPage(firstEnabledStepPage)}
         />
       ),
     },
@@ -887,14 +895,9 @@ export default function App() {
           stepKey={page.stepKey!}
           stepLabel={workflowStepDefinitions[index].title}
           stepDescription={workflowStepDefinitions[index].summary}
-          stepNumber={page.stepNumber!}
-          stepCount={stepPages.length}
           stepPages={stepPages}
-          onNavigate={setCurrentPageId}
-          previousPageId={(() => {
-            const availablePrevious = stepPages.slice(0, index).filter((item) => !item.disabled);
-            return availablePrevious.length ? availablePrevious[availablePrevious.length - 1]!.id : 'landing';
-          })()}
+          openedPageIds={openedPageIds}
+          onNavigate={navigateToPage}
           nextPageId={stepPages.slice(index + 1).find((item) => !item.disabled)?.id}
         />
       ),
@@ -905,13 +908,7 @@ export default function App() {
   return (
     <AppShell
       brandTitle="We Build Testing"
-      navigationItems={navigationItems}
-      currentPageId={currentPage.id}
-      onNavigate={(pageId) => {
-        if (!isWorkflowStepKey(pageId) || isJourneyPageEnabled(session, pageId)) {
-          setCurrentPageId(pageId as JourneyPageId);
-        }
-      }}
+      onBrandClick={() => navigateToPage('landing')}
       languageLinks={[
         { href: '#page-footer', label: 'FI' },
         { href: '#page-footer', label: 'EN', isCurrent: true },

@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 
 type PageHeroProps = {
-  eyebrow: ReactNode;
+  eyebrow?: ReactNode;
   title: string;
   intro: string;
   secondaryIntro?: string;
+  actions?: ReactNode;
 };
 
 type PageSectionProps = {
@@ -16,14 +17,15 @@ type PageSectionProps = {
   children: ReactNode;
 };
 
-export function PageHero({ eyebrow, title, intro, secondaryIntro }: PageHeroProps) {
+export function PageHero({ eyebrow, title, intro, secondaryIntro, actions }: PageHeroProps) {
   return (
     <section className="intro-card">
       <div className="intro-card-content">
-        <p className="eyebrow">{eyebrow}</p>
+        {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
         <h2 className="page-title">{title}</h2>
         <p className="intro">{intro}</p>
         {secondaryIntro ? <p className="intro intro-secondary">{secondaryIntro}</p> : null}
+        {actions ? <div className="action-row intro-card-actions">{actions}</div> : null}
       </div>
     </section>
   );

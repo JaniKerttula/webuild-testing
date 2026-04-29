@@ -5,7 +5,6 @@ import {
 import { PageHero } from '../components/PageLayout.js';
 import { WorkflowEvidenceSection } from './workflow/WorkflowEvidenceSection.js';
 import { WorkflowHistorySection } from './workflow/WorkflowHistorySection.js';
-import { WorkflowReviewSection } from './workflow/WorkflowReviewSection.js';
 import { WorkflowSessionSection } from './workflow/WorkflowSessionSection.js';
 import { WorkflowStepsSection } from './workflow/WorkflowStepsSection.js';
 import { WorkflowWalletSetupSection } from './workflow/WorkflowWalletSetupSection.js';
@@ -50,6 +49,8 @@ export function WorkflowPage({
         stepCount={stepCards.length}
         onVendorChange={onVendorChange}
         onStartNewSession={onStartNewSession}
+        canTriggerVendorActions={canTriggerVendorActions}
+        onTriggerAction={onTriggerAction}
       />
 
       <WorkflowWalletSetupSection
@@ -69,13 +70,6 @@ export function WorkflowPage({
         canTriggerVendorActions={canTriggerVendorActions}
         isMockLocalVendor={isMockLocalVendor}
         onTriggerAction={onTriggerAction}
-      />
-
-      <WorkflowReviewSection
-        session={session}
-        canTriggerVendorActions={canTriggerVendorActions}
-        onTriggerAction={onTriggerAction}
-        mode="review"
       />
 
       <WorkflowHistorySection session={session} />

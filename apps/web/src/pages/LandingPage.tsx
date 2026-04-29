@@ -32,25 +32,19 @@ export function LandingPage({
   return (
     <>
       <PageHero
-        eyebrow="Landing page"
         title="Local VAT attestation test journey"
         intro="Choose a vendor profile, preload test credentials, and walk the orchestration flow page by page."
         secondaryIntro="This app is a local testing workspace for wallet seeding, session orchestration, and vendor-shaped credential exchange before each workflow page gets its final task-specific UI."
-      />
-
-      <WorkflowSessionSection
-        apiBaseUrl={apiBaseUrl}
-        vendorOptions={vendorOptions}
-        selectedVendor={selectedVendor}
-        selectedVendorOption={selectedVendorOption}
-        session={session}
-        sessionState={sessionState}
-        health={health}
-        stepCount={stepPages.length}
-        onVendorChange={onVendorChange}
-        onStartNewSession={onStartNewSession}
-        showWalletSetup
-        onSeedWalletCredential={onSeedWalletCredential}
+        actions={(
+          <button
+            type="button"
+            className="action-button"
+            onClick={onStartWorkflow}
+            disabled={!stepPages.some((page) => !page.disabled)}
+          >
+            Start workflow
+          </button>
+        )}
       />
 
       <PageSection
@@ -72,24 +66,36 @@ export function LandingPage({
                 type="button"
                 className="action-button action-button-secondary"
                 disabled={page.disabled}
+                aria-label={`Open ${page.label} page`}
                 onClick={() => {
                   if (isWorkflowStepKey(page.id)) {
                     onNavigate(page.id);
                   }
                 }}
               >
-                Open page
+                Open {page.label} page
               </button>
             </article>
           ))}
         </div>
 
-        <div className="action-row journey-primary-actions">
-          <button type="button" className="action-button" onClick={onStartWorkflow} disabled={!stepPages.some((page) => !page.disabled)}>
-            Start workflow
-          </button>
-        </div>
       </PageSection>
+
+      <WorkflowSessionSection
+        apiBaseUrl={apiBaseUrl}
+        vendorOptions={vendorOptions}
+        selectedVendor={selectedVendor}
+        selectedVendorOption={selectedVendorOption}
+        session={session}
+        sessionState={sessionState}
+        health={health}
+        stepCount={stepPages.length}
+        onVendorChange={onVendorChange}
+        onStartNewSession={onStartNewSession}
+        showReviewPayload={false}
+        showWalletSetup
+        onSeedWalletCredential={onSeedWalletCredential}
+      />
     </>
   );
 }

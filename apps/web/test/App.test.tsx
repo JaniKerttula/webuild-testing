@@ -258,6 +258,70 @@ function createReviewReadySession(): OrchestrationSession {
   });
 }
 
+function createReviewPendingAssemblySession(): OrchestrationSession {
+  const session = createInitialSession('igrant-sandbox', '2026-04-22T10:00:00.000Z');
+  session.sessionId = 'session-igrant';
+
+  const withPid = updateSessionStep(session, {
+    step: 'pid',
+    status: 'succeeded',
+    data: {
+      record: {
+        givenName: 'Teemu',
+        familyName: 'Tester',
+        fullName: 'Teemu Tester',
+        dateOfBirth: '1990-01-01',
+        nationality: 'FI',
+        residentCountry: 'FI',
+        ageOver18: true,
+        issuerName: 'Mock Issuer',
+        issuerId: 'issuer-1',
+        issuedAt: '2026-04-22T10:00:00.000Z',
+        expiresAt: '2030-01-01T00:00:00.000Z',
+      },
+    },
+  });
+
+  const withPoa = updateSessionStep(withPid, {
+    step: 'poa',
+    status: 'succeeded',
+    data: {
+      record: {
+        companyId: 'FIHPR.2468135-7',
+        companyName: 'Teemun Tomaatit Oy',
+        principalName: 'Teemun Tomaatit Oy',
+        attorneyName: 'Teemu Tester',
+        attorneyDateOfBirth: '1990-01-01',
+        scope: ['vat-filing'],
+        substitutionAllowed: false,
+        validFrom: '2026-04-21',
+        validUntil: '2030-01-01',
+        lawJurisdiction: 'FI',
+        signingPlace: 'Tampere',
+        signingDate: '2026-04-21',
+      },
+    },
+  });
+
+  return updateSessionStep(withPoa, {
+    step: 'eucc',
+    status: 'succeeded',
+    data: {
+      record: {
+        companyId: 'FIHPR.2468135-7',
+        companyName: 'Teemun Tomaatit Oy',
+        legalForm: 'Oy',
+        registrationMemberState: 'FI',
+        registeredAddress: 'Tomaattikuja 7; 33100 Tampere; Finland',
+        registrationDate: '2020-03-15',
+        legalPersonStatus: 'active',
+        activityCodes: ['01.13'],
+        representativeNames: ['Teemu Testi'],
+      },
+    },
+  });
+}
+
 function createPendingVatIssuanceSession(): OrchestrationSession {
   const reviewSession = createReviewReadySession();
   const attestation = reviewSession.review.data!.vatAttestation;
@@ -280,10 +344,17 @@ function createPendingVatIssuanceSession(): OrchestrationSession {
 
 async function openJourneyPage(label: string): Promise<void> {
   await waitFor(() => {
-    expect(screen.getByRole('button', { name: label }).hasAttribute('disabled')).toBe(false);
+    const targetButton = screen.queryByRole('button', { name: label })
+      ?? screen.queryByRole('button', { name: `Open ${label} page` });
+
+    expect(targetButton).toBeTruthy();
+    expect(targetButton?.hasAttribute('disabled')).toBe(false);
   });
 
-  fireEvent.click(screen.getByRole('button', { name: label }));
+  const targetButton = screen.queryByRole('button', { name: label })
+    ?? screen.getByRole('button', { name: `Open ${label} page` });
+
+  fireEvent.click(targetButton);
 }
 
 describe('App polling', () => {
@@ -341,7 +412,7 @@ describe('App polling', () => {
     expect(screen.queryByRole('button', { name: 'Fail' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Local VAT attestation test journey' })).toBeNull();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Review' }));
+    await openJourneyPage('Review');
 
     expect(await screen.findByRole('heading', { name: 'Review payload', level: 2 })).toBeTruthy();
 
@@ -1192,6 +1263,62 @@ describe('App polling', () => {
     expect(screen.getByText('Matched from the verified EUCC company before issuance.')).toBeTruthy();
   });
 
+  it('assembles the review payload automatically when the review step opens', async () => {
+    let currentSession = createReviewPendingAssemblySession();
+    let reviewActionCalls = 0;
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.endsWith('/health') && method === 'GET') {
+        return new Response(JSON.stringify({ status: 'ok', service: 'local-api' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/vendors') && method === 'GET') {
+        return new Response(JSON.stringify(vendorCatalog), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/sessions') && method === 'POST') {
+        return new Response(JSON.stringify(currentSession), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/sessions/session-igrant/actions/review') && method === 'POST') {
+        reviewActionCalls += 1;
+        currentSession = createReviewReadySession();
+
+        return new Response(JSON.stringify(currentSession), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`Unhandled fetch ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await openJourneyPage('Review');
+
+    await waitFor(() => {
+      expect(reviewActionCalls).toBe(1);
+      expect(screen.getByText('Matched VAT attestation')).toBeTruthy();
+    });
+
+    expect(screen.queryByRole('button', { name: 'Assemble review' })).toBeNull();
+  });
+
   it('gates future pages until workflow dependencies are ready', async () => {
     const currentSession = createReadySession();
 
@@ -1229,8 +1356,7 @@ describe('App polling', () => {
 
     await openJourneyPage('Identification');
 
-    expect(screen.getByRole('button', { name: 'Review' }).hasAttribute('disabled')).toBe(true);
-    expect(screen.getByRole('button', { name: 'Next' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Continue to next step' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'PID collection surface', level: 3 })).toBeNull();
     expect(screen.queryByText('EUCC presentation request')).toBeNull();
   });

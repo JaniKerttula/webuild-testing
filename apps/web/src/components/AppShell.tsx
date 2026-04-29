@@ -19,9 +19,7 @@ type FooterLink = {
 
 type AppShellProps = {
   brandTitle: string;
-  navigationItems: NavigationItem[];
-  currentPageId: string;
-  onNavigate: (pageId: string) => void;
+  onBrandClick: () => void;
   languageLinks: LanguageLink[];
   footerLinks: FooterLink[];
   children: ReactNode;
@@ -29,9 +27,7 @@ type AppShellProps = {
 
 export function AppShell({
   brandTitle,
-  navigationItems,
-  currentPageId,
-  onNavigate,
+  onBrandClick,
   languageLinks,
   footerLinks,
   children,
@@ -41,7 +37,9 @@ export function AppShell({
       <header className="site-header">
         <div className="site-header-inner">
           <div className="brand-lockup">
-            <h1 className="brand-title">{brandTitle}</h1>
+            <button type="button" className="brand-title-button" onClick={onBrandClick}>
+              <h1 className="brand-title">{brandTitle}</h1>
+            </button>
           </div>
 
           <div className="header-actions" aria-label="Language switcher">
@@ -58,23 +56,6 @@ export function AppShell({
           </div>
         </div>
       </header>
-
-      <nav className="top-navigation" aria-label="Primary">
-        <div className="top-navigation-inner">
-          {navigationItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`top-navigation-button${item.id === currentPageId ? ' current-section' : ''}`}
-              aria-current={item.id === currentPageId ? 'page' : undefined}
-              disabled={item.disabled}
-              onClick={() => onNavigate(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </nav>
 
       <main className="page-main">
         <article className="page-content">{children}</article>

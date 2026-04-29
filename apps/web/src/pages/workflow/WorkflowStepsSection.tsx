@@ -17,7 +17,7 @@ export function WorkflowStepsSection({
   isMockLocalVendor,
   onTriggerAction,
 }: WorkflowStepsSectionProps) {
-  const stepCards = session ? getWorkflowStepSnapshots(session) : [];
+  const stepCards = session ? getWorkflowStepSnapshots(session).filter((step) => step.key !== 'review') : [];
 
   return (
     <PageSection id="workflow-steps" eyebrow="Workflow steps" title="Current journey">
@@ -34,20 +34,22 @@ export function WorkflowStepsSection({
               <span>{step.walletRole === 'operator' ? 'Operator step' : 'Wallet step'}</span>
             </div>
             <div className="step-actions">
-              <button
-                type="button"
-                className="action-button"
-                onClick={() => onTriggerAction(step.key)}
-                disabled={!canTriggerVendorActions || step.status === 'blocked'}
-              >
-                {actionLabels[step.key]}
-              </button>
+              {step.key !== 'review' ? (
+                <button
+                  type="button"
+                  className="action-button"
+                  onClick={() => onTriggerAction(step.key)}
+                  disabled={!canTriggerVendorActions || step.status === 'blocked'}
+                >
+                  {actionLabels[step.key]}
+                </button>
+              ) : null}
               {isMockLocalVendor ? (
                 <button
                   type="button"
                   className="action-button action-button-secondary"
                   onClick={() => onTriggerAction(step.key, 'failure')}
-                  disabled={!session}
+                  disabled={!session || step.key === 'review'}
                 >
                   Fail
                 </button>
