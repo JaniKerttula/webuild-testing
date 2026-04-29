@@ -1,9 +1,10 @@
 import type { OrchestrationSession, VendorDefinition, VendorId } from '@we-build/domain';
 
 import { PageSection } from '../../components/PageLayout.js';
-import { statusNotes, walletSeedOptions } from '../../workflowUi.js';
+import { getVendorDisplay, useI18n } from '../../i18n.js';
+import { getActionLabels, getStatusNotes, getWalletSeedOptions, getWorkflowStatusLabels } from '../../workflowUi.js';
 import { formatTimestamp } from './WorkflowShared.js';
-import { WalletCredentialCard, WorkflowQrPanel } from './WorkflowShared.js';
+import { WalletCredentialCard } from './WorkflowShared.js';
 import type { HealthState, SessionState, WorkflowPageProps } from './types.js';
 
 type WorkflowSessionSectionProps = {
@@ -41,22 +42,33 @@ export function WorkflowSessionSection({
   showWalletSetup = false,
   onSeedWalletCredential,
 }: WorkflowSessionSectionProps) {
+  const { locale, t } = useI18n();
+  const statusNotes = getStatusNotes(locale);
+  const walletSeedOptions = getWalletSeedOptions(locale);
+  const workflowStatusLabels = getWorkflowStatusLabels(locale);
+  const actionLabels = getActionLabels(locale);
   const allowsWalletSeeding = Boolean(selectedVendorOption?.capabilities.mockWalletSeeding);
-  const showsWalletState = selectedVendorOption?.id === 'mock-local';
+  const showsWalletState = Boolean(
+    session?.wallets.personal.loadedCredentials.length
+    || session?.wallets.company.loadedCredentials.length
+    || selectedVendorOption?.id === 'mock-local',
+  );
+  const walletCredentials = [
+    ...(session?.wallets.personal.loadedCredentials ?? []),
+    ...(session?.wallets.company.loadedCredentials ?? []),
+  ];
   const usesExternalWallets = selectedVendorOption?.walletInteraction.personal === 'external-wallet-app'
     || selectedVendorOption?.walletInteraction.company === 'external-wallet-app';
-  const personalPidOffer = session?.wallets.personal.loadedCredentials.find(
-    (credential) => credential.credentialType === 'pid' && credential.offer,
-  );
+  const selectedVendorDisplay = selectedVendorOption ? getVendorDisplay(locale, selectedVendorOption.id) : undefined;
   const reviewPayload = session?.review.data;
   const issuanceResult = session?.vatIssuance.data;
 
   return (
     <PageSection
       id="workflow"
-      eyebrow="Create workflow"
-      title="Prepare local workflow session"
-      copy="Select the local vendor profile and review the available session state before the step-by-step flow is connected to live actions."
+      eyebrow={t.sessionSection.eyebrow}
+      title={t.sessionSection.title}
+      copy={t.sessionSection.copy}
       stacked
     >
       <div className="service-grid">
@@ -64,11 +76,11 @@ export function WorkflowSessionSection({
           <div className="workflow-card-stack">
             <div className="workflow-card-main">
               <div className="panel-heading-inline">
-                <strong>Vendor profile</strong>
-                <span className="vendor-badge">{selectedVendorOption?.badge ?? 'Loading'}</span>
+                <strong>{t.sessionSection.vendorProfile}</strong>
+                <span className="vendor-badge">{selectedVendorDisplay?.badge ?? t.common.loading}</span>
               </div>
               <label className="select-label" htmlFor="vendor-select">
-                Vendor
+                {t.sessionSection.vendorLabel}
               </label>
               <select
                 id="vendor-select"
@@ -79,55 +91,55 @@ export function WorkflowSessionSection({
               >
                 {vendorOptions.map((vendor) => (
                   <option key={vendor.id} value={vendor.id}>
-                    {vendor.label}
+                    {getVendorDisplay(locale, vendor.id).label}
                   </option>
                 ))}
               </select>
 
-              <p className="supporting-copy">{selectedVendorOption?.description ?? 'Loading vendor definitions from the local API.'}</p>
+              <p className="supporting-copy">{selectedVendorDisplay?.description ?? t.common.loadingVendorDefinitions}</p>
             </div>
 
             <section className="workflow-card-status" id="status">
-              <p className="panel-label">Service status</p>
+              <p className="panel-label">{t.sessionSection.serviceStatus}</p>
               <div className="status-list">
                 <div className="status-item">
-                  <span>Frontend</span>
-                  <strong>Local shell active</strong>
+                  <span>{t.sessionSection.frontend}</span>
+                  <strong>{t.common.localShellActive}</strong>
                 </div>
                 <div className="status-item">
-                  <span>API health</span>
+                  <span>{t.sessionSection.apiHealth}</span>
                   <strong data-state={health.status}>{health.detail}</strong>
                 </div>
                 <div className="status-item">
-                  <span>API base URL</span>
+                  <span>{t.sessionSection.apiBaseUrl}</span>
                   <strong>{apiBaseUrl}</strong>
                 </div>
                 <div className="status-item">
-                  <span>Session API</span>
+                  <span>{t.sessionSection.sessionApi}</span>
                   <strong data-state={sessionState.status}>{sessionState.detail}</strong>
                 </div>
                 <div className="status-item">
-                  <span>Session id</span>
-                  <strong>{session?.sessionId ?? 'Not loaded yet'}</strong>
+                  <span>{t.sessionSection.sessionId}</span>
+                  <strong>{session?.sessionId ?? t.common.notLoadedYet}</strong>
                 </div>
               </div>
 
               <div className="action-row">
                 <button type="button" className="action-button" onClick={onStartNewSession}>
-                  Start new session
+                  {t.sessionSection.startNewSession}
                 </button>
               </div>
             </section>
 
             {showWalletSetup && onSeedWalletCredential ? (
               <div className="workflow-inline-section">
-                <p className="panel-label">Test credentials</p>
+                <p className="panel-label">{t.sessionSection.testCredentials}</p>
                 <p className="supporting-copy">
                   {allowsWalletSeeding
                     ? usesExternalWallets
-                      ? 'This vendor creates real wallet offers for seeded test credentials. Use the QR code below when the PID issuer connection appears.'
-                      : 'This vendor supports local mock credential seeding, so wallets can be preloaded before running vendor-backed steps.'
-                    : 'This vendor does not expose local mock credential seeding. Credential state must come back through vendor adapter actions.'}
+                      ? t.sessionSection.testCredentialCopy.externalWallets
+                      : t.sessionSection.testCredentialCopy.localWallets
+                    : t.sessionSection.testCredentialCopy.noWalletSeeding}
                 </p>
                 <div className="step-actions">
                   {walletSeedOptions.map((option) => (
@@ -146,118 +158,89 @@ export function WorkflowSessionSection({
             ) : null}
           </div>
 
-          {showWalletSetup && personalPidOffer?.offer ? (
-            <WorkflowQrPanel
-              title="PID issuer connection"
-              badge="OID4VCI"
-              description="Use this QR code or deep-link to open the wallet and accept the PID credential offer from the issuer."
-              qrValue={personalPidOffer.offer.qrCodeValue}
-              qrAlt="PID issuer connection QR code"
-              metadata={[
-                { label: 'Credential', value: personalPidOffer.label },
-                { label: 'Holder', value: personalPidOffer.holderName },
-                { label: 'Exchange ID', value: personalPidOffer.offer.exchangeId ?? 'Pending' },
-                { label: 'PIN', value: personalPidOffer.offer.userPin ?? 'Not required' },
-              ]}
-              primaryAction={{ href: personalPidOffer.offer.offerUri, label: 'Open issuer deep-link' }}
-              secondaryAction={personalPidOffer.offer.referenceUri
-                ? { href: personalPidOffer.offer.referenceUri, label: 'Open raw offer URL' }
-                : undefined}
-            />
-          ) : null}
-
           {showWalletSetup && showsWalletState ? (
-            <div className="wallet-grid unified-wallet-grid">
+            <div className="wallet-grid">
               <section className="panel">
-                <p className="panel-label">Personal wallet</p>
+                <p className="panel-label">{t.sessionSection.walletCredentials}</p>
                 <ul className="wallet-list">
-                  {session?.wallets.personal.loadedCredentials.length ? session.wallets.personal.loadedCredentials.map((credential) => (
-                    <WalletCredentialCard key={`personal-${credential.credentialType}`} credential={credential} />
-                  )) : <li>No credentials loaded.</li>}
-                </ul>
-              </section>
-
-              <section className="panel">
-                <p className="panel-label">Company wallet</p>
-                <ul className="wallet-list">
-                  {session?.wallets.company.loadedCredentials.length ? session.wallets.company.loadedCredentials.map((credential) => (
-                    <WalletCredentialCard key={`company-${credential.credentialType}`} credential={credential} />
-                  )) : <li>No credentials loaded.</li>}
+                  {walletCredentials.length ? walletCredentials.map((credential) => (
+                    <WalletCredentialCard key={`${credential.credentialType}-${credential.seededAt}`} credential={credential} />
+                  )) : <li>{t.common.noCredentialsLoaded}</li>}
                 </ul>
               </section>
             </div>
           ) : null}
 
           {showReviewPayload ? (
-          <div className="card-grid" aria-label="Review payload cards">
+          <div className="card-grid" aria-label={t.sessionSection.reviewPayloadCardsAria}>
             <article className="step-card" data-state={session?.review.status ?? 'not-started'}>
               <div className="step-card-top">
-                <h4>Review payload</h4>
-                <span className="step-state">{session?.review.status ?? 'not-started'}</span>
+                <h4>{t.sessionSection.reviewPayload}</h4>
+                <span className="step-state">{workflowStatusLabels[session?.review.status ?? 'not-started']}</span>
               </div>
-              <p className="step-summary">Assemble PID, company, PoA, and EUCC into one review object.</p>
+              <p className="step-summary">{t.sessionSection.reviewPayloadSummary}</p>
               <p className="step-note">{statusNotes[session?.review.status ?? 'not-started']}</p>
 
               {reviewPayload ? (
                 <div className="review-sections">
                   <div className="review-block">
-                    <h4>Person</h4>
+                    <h4>{t.review.person}</h4>
                     <dl className="review-list">
-                      <div><dt>Name</dt><dd>{reviewPayload.person.fullName}</dd></div>
-                      <div><dt>Date of birth</dt><dd>{reviewPayload.person.dateOfBirth}</dd></div>
-                      <div><dt>Nationality</dt><dd>{reviewPayload.person.nationality}</dd></div>
+                      <div><dt>{t.fields.name}</dt><dd>{reviewPayload.person.fullName}</dd></div>
+                      <div><dt>{t.fields.dateOfBirth}</dt><dd>{reviewPayload.person.dateOfBirth}</dd></div>
+                      <div><dt>{t.fields.nationality}</dt><dd>{reviewPayload.person.nationality}</dd></div>
                     </dl>
                   </div>
 
                   <div className="review-block">
-                    <h4>Company</h4>
+                    <h4>{t.review.company}</h4>
                     <dl className="review-list">
-                      <div><dt>Name</dt><dd>{reviewPayload.company.companyName}</dd></div>
-                      <div><dt>Company ID</dt><dd>{reviewPayload.company.companyId}</dd></div>
-                      <div><dt>Jurisdiction</dt><dd>{reviewPayload.company.jurisdiction}</dd></div>
+                      <div><dt>{t.fields.name}</dt><dd>{reviewPayload.company.companyName}</dd></div>
+                      <div><dt>{t.fields.companyId}</dt><dd>{reviewPayload.company.companyId}</dd></div>
+                      <div><dt>{t.fields.jurisdiction}</dt><dd>{reviewPayload.company.jurisdiction}</dd></div>
                     </dl>
                   </div>
 
                   <div className="review-block">
-                    <h4>PoA</h4>
+                    <h4>{t.review.poa}</h4>
                     <dl className="review-list">
-                      <div><dt>Principal</dt><dd>{reviewPayload.poa.principalName}</dd></div>
-                      <div><dt>Attorney</dt><dd>{reviewPayload.poa.attorneyName}</dd></div>
-                      <div><dt>Scope</dt><dd>{reviewPayload.poa.scope.join(', ')}</dd></div>
+                      <div><dt>{t.fields.principal}</dt><dd>{reviewPayload.poa.principalName}</dd></div>
+                      <div><dt>{t.fields.attorney}</dt><dd>{reviewPayload.poa.attorneyName}</dd></div>
+                      <div><dt>{t.fields.scope}</dt><dd>{reviewPayload.poa.scope.join(', ')}</dd></div>
                     </dl>
                   </div>
 
                   <div className="review-block">
-                    <h4>EUCC</h4>
+                    <h4>{t.review.eucc}</h4>
                     <dl className="review-list">
-                      <div><dt>Legal form</dt><dd>{reviewPayload.eucc.legalForm}</dd></div>
-                      <div><dt>Registered address</dt><dd>{reviewPayload.eucc.registeredAddress}</dd></div>
-                      <div><dt>Representatives</dt><dd>{reviewPayload.eucc.representativeNames.join(', ')}</dd></div>
+                      <div><dt>{t.fields.legalForm}</dt><dd>{reviewPayload.eucc.legalForm}</dd></div>
+                      <div><dt>{t.fields.registeredAddress}</dt><dd>{reviewPayload.eucc.registeredAddress}</dd></div>
+                      <div><dt>{t.fields.representatives}</dt><dd>{reviewPayload.eucc.representativeNames.join(', ')}</dd></div>
                     </dl>
                   </div>
 
                   <div className="review-block">
-                    <h4>Matched VAT attestation</h4>
+                    <h4>{t.review.matchedVatAttestation}</h4>
                     <dl className="review-list">
-                      <div><dt>VAT ID</dt><dd>{reviewPayload.vatAttestation.vatId}</dd></div>
-                      <div><dt>Economic operator</dt><dd>{reviewPayload.vatAttestation.economicOperatorName}</dd></div>
-                      <div><dt>Operator ID</dt><dd>{reviewPayload.vatAttestation.economicOperatorId}</dd></div>
-                      <div><dt>Administrative unit</dt><dd>{reviewPayload.vatAttestation.administrativeUnitName}</dd></div>
-                      <div><dt>Issuer</dt><dd>{reviewPayload.vatAttestation.issuingOrganisation}</dd></div>
+                      <div><dt>{t.workflowStep.issuanceFields.vatId}</dt><dd>{reviewPayload.vatAttestation.vatId}</dd></div>
+                      <div><dt>{t.fields.economicOperator}</dt><dd>{reviewPayload.vatAttestation.economicOperatorName}</dd></div>
+                      <div><dt>{t.fields.operatorId}</dt><dd>{reviewPayload.vatAttestation.economicOperatorId}</dd></div>
+                      <div><dt>{t.workflowStep.issuanceFields.administrativeUnit}</dt><dd>{reviewPayload.vatAttestation.administrativeUnitName}</dd></div>
+                      <div><dt>{t.fields.issuer}</dt><dd>{reviewPayload.vatAttestation.issuingOrganisation}</dd></div>
                     </dl>
-                    <p className="supporting-copy">Matched from the verified EUCC company before issuance.</p>
+                    <p className="supporting-copy">{t.review.matchedHint}</p>
                   </div>
 
-                  <p className="supporting-copy">Assembled at {formatTimestamp(reviewPayload.assembledAt)}.</p>
+                  <p className="supporting-copy">{t.review.assembledAt} {formatTimestamp(reviewPayload.assembledAt, locale)}.</p>
                 </div>
               ) : (
                 <p className="supporting-copy">
-                  The review payload appears automatically after PID, PoA, and EUCC succeed. This card becomes the explicit submission surface for VAT issuance.
+                  {t.sessionSection.reviewPayloadEmpty}
                 </p>
               )}
 
               <div className="step-meta">
-                <span>Operator step</span>
+                <span>{t.sessionSection.operatorStep}</span>
               </div>
 
               <div className="action-row">
@@ -267,7 +250,7 @@ export function WorkflowSessionSection({
                   onClick={() => onTriggerAction?.('vatIssuance')}
                   disabled={!onTriggerAction || !canTriggerVendorActions || session?.review.status !== 'succeeded'}
                 >
-                  Submit VAT issuance
+                  {t.workflowStep.submitVatIssuance}
                 </button>
                 <button
                   type="button"
@@ -275,39 +258,39 @@ export function WorkflowSessionSection({
                   onClick={() => onTriggerAction?.('issuanceStatus')}
                   disabled={!onTriggerAction || !canTriggerVendorActions || session?.vatIssuance.status !== 'pending'}
                 >
-                  Refresh issuance status
+                  {t.sessionSection.refreshIssuanceStatus}
                 </button>
               </div>
             </article>
 
             <article className="step-card" data-state={session?.vatIssuance.status ?? 'not-started'}>
               <div className="step-card-top">
-                <h4>Issuance result</h4>
+                <h4>{t.sessionSection.issuanceResult}</h4>
                 <span className="step-state">{session?.vatIssuance.status ?? 'not-started'}</span>
               </div>
               <p className="step-summary">
-                VAT issuance output appears here after submission. Pending vendor modes can remain in progress until a later status refresh.
+                {t.sessionSection.issuanceResultSummary}
               </p>
               <p className="step-note">{statusNotes[session?.vatIssuance.status ?? 'not-started']}</p>
 
               {issuanceResult ? (
                 <dl className="review-list">
-                  <div><dt>VAT ID</dt><dd>{issuanceResult.vatId}</dd></div>
-                  <div><dt>Organisation</dt><dd>{issuanceResult.issuingOrganisation}</dd></div>
-                  <div><dt>Country</dt><dd>{issuanceResult.issuingCountry}</dd></div>
-                  <div><dt>Administrative unit</dt><dd>{issuanceResult.administrativeUnitName}</dd></div>
-                  <div><dt>Status</dt><dd>{issuanceResult.status}</dd></div>
-                  <div><dt>Issued at</dt><dd>{formatTimestamp(issuanceResult.issuedAt)}</dd></div>
-                  <div><dt>Exchange ID</dt><dd>{issuanceResult.exchangeId ?? 'Not assigned yet'}</dd></div>
+                  <div><dt>{t.workflowStep.issuanceFields.vatId}</dt><dd>{issuanceResult.vatId}</dd></div>
+                  <div><dt>{t.workflowStep.issuanceFields.organisation}</dt><dd>{issuanceResult.issuingOrganisation}</dd></div>
+                  <div><dt>{t.workflowStep.issuanceFields.country}</dt><dd>{issuanceResult.issuingCountry}</dd></div>
+                  <div><dt>{t.workflowStep.issuanceFields.administrativeUnit}</dt><dd>{issuanceResult.administrativeUnitName}</dd></div>
+                  <div><dt>{t.workflowStep.issuanceFields.status}</dt><dd>{issuanceResult.status}</dd></div>
+                  <div><dt>{t.workflowStep.issuanceFields.issuedAt}</dt><dd>{formatTimestamp(issuanceResult.issuedAt, locale)}</dd></div>
+                  <div><dt>{t.workflowStep.issuanceFields.exchangeId}</dt><dd>{issuanceResult.exchangeId ?? t.common.notAssignedYet}</dd></div>
                 </dl>
               ) : (
                 <p className="supporting-copy">
-                  VAT issuance output appears here after the explicit submit action. Pending vendor modes can stay in progress until a later status refresh.
+                  {t.sessionSection.issuanceResultEmpty}
                 </p>
               )}
 
               <div className="step-meta">
-                <span>Submission result</span>
+                <span>{t.sessionSection.submissionResult}</span>
               </div>
             </article>
           </div>
@@ -316,14 +299,12 @@ export function WorkflowSessionSection({
       </div>
 
       <div className="message-box" id="session-overview">
-        <strong>Session overview</strong>
+        <strong>{t.sessionSection.sessionOverview}</strong>
         <p>
-          The landing page now keeps vendor selection, service status, and test credential setup in
-          one place, with the active session id visible directly in the status block.
+          {t.sessionSection.sessionOverviewCopy1}
         </p>
         <p>
-          The mock local vendor now runs directly from the page with success and failure
-          simulation modes for every step.
+          {t.sessionSection.sessionOverviewCopy2}
         </p>
       </div>
     </PageSection>

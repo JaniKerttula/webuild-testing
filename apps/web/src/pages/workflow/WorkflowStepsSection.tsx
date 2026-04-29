@@ -1,7 +1,8 @@
-import { getWorkflowStepSnapshots, workflowStatusLabels, type OrchestrationSession } from '@we-build/domain';
+import { getWorkflowStepSnapshots, type OrchestrationSession } from '@we-build/domain';
 
 import { PageSection } from '../../components/PageLayout.js';
-import { actionLabels, statusNotes } from '../../workflowUi.js';
+import { useI18n } from '../../i18n.js';
+import { getActionLabels, getStatusNotes, getWorkflowStatusLabels } from '../../workflowUi.js';
 import type { WorkflowPageProps } from './types.js';
 
 type WorkflowStepsSectionProps = {
@@ -17,6 +18,10 @@ export function WorkflowStepsSection({
   isMockLocalVendor,
   onTriggerAction,
 }: WorkflowStepsSectionProps) {
+  const { locale } = useI18n();
+  const actionLabels = getActionLabels(locale);
+  const statusNotes = getStatusNotes(locale);
+  const workflowStatusLabels = getWorkflowStatusLabels(locale);
   const stepCards = session ? getWorkflowStepSnapshots(session).filter((step) => step.key !== 'review') : [];
 
   return (

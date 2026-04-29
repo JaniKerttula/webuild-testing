@@ -1,0 +1,323 @@
+{
+  "shell": {
+    "brandTitle": "WE BUILD ALV-todistuksen testi",
+    "languageSwitcherLabel": "Kielen valinta",
+    "footerLinks": {
+      "dataProtection": "Tietosuoja",
+      "accessibility": "Saavutettavuusseloste",
+      "contactInformation": "Yhteystiedot"
+    }
+  },
+  "common": {
+    "loading": "Ladataan",
+    "retry": "Yritä uudelleen",
+    "cancel": "Peruuta",
+    "fail": "Epäonnistu",
+    "continueToNextStep": "Jatka seuraavaan vaiheeseen",
+    "notAvailable": "Ei saatavilla",
+    "pending": "Odottaa",
+    "dynamic": "Dynaaminen",
+    "notRequired": "Ei vaadita",
+    "notLoadedYet": "Ei vielä ladattu",
+    "notAssignedYet": "Ei vielä määritetty",
+    "noEventsYet": "Istuntotapahtumia ei ole vielä kirjattu.",
+    "noCredentialsLoaded": "Tunnuksia ei ole ladattu.",
+    "generatingQrCode": "Luodaan QR-koodia...",
+    "showRawQrInput": "Näytä QR-koodin raakasisältö",
+    "openRequestUri": "Avaa pyyntö-URI",
+    "openWalletDeepLink": "Avaa lompakon syvälinkki",
+    "openIssuerDeepLink": "Avaa OID4VCI-syvälinkki",
+    "openRawOfferUrl": "Avaa tarjouksen raakasisältö-URL",
+    "loadingVendor": "Ladataan toimittajaa",
+    "loadingVendorDefinitions": "Ladataan toimittajamäärittelyjä paikallisesta API:sta.",
+    "notLoaded": "Ei ladattu",
+    "localShellActive": "Paikallinen käyttöliittymä aktiivinen"
+  },
+  "navigation": {
+    "landing": "Aloitus",
+    "workflowBreadcrumbAria": "Työvaiheen murupolku",
+    "stepLabels": {
+      "pid": "Tunnistautuminen",
+      "poa": "Valtuutus",
+      "eucc": "Yritys",
+      "review": "Tarkistus",
+      "vatIssuance": "Myöntäminen"
+    },
+    "stepDescriptions": {
+      "pid": "Pyydä henkilölompakosta tunnistautumistiedot ja aloita vaiheittainen kulku.",
+      "poa": "Pyydä henkilölompakosta valtuutustiedot jatkovaiheita varten.",
+      "eucc": "Pyydä yrityslompakosta organisaatiotiedot vahvistusta varten.",
+      "review": "Koosta kerätyt tiedot tarkistusnäkymäksi ja vertaile ALV-todistuksiin.",
+      "vatIssuance": "Lähetä myöntöpyyntö ja seuraa normalisoitua lopputulosta."
+    }
+  },
+  "statuses": {
+    "workflow": {
+      "not-started": "Ei aloitettu",
+      "ready": "Valmis",
+      "blocked": "Estetty",
+      "pending": "Odottaa",
+      "succeeded": "Onnistui",
+      "failed": "Epäonnistui"
+    },
+    "notes": {
+      "ready": "Tämä vaihe on käytettävissä nykyisessä normalisoidussa istuntotilassa.",
+      "blocked": "Tämä vaihe on tarkoituksella lukittu aiempien riippuvuuksien vuoksi.",
+      "pending": "Tämä vaihe odottaa parhaillaan toimittajan tai istunto-API:n vastausta.",
+      "succeeded": "Tämän vaiheen normalisoidut tiedot ovat valmiina seuraaville näytöille.",
+      "failed": "Tämä vaihe näyttää normalisoidun virheen ja tarjoaa uuden yrityksen polun.",
+      "not-started": "Vaihe on mallissa olemassa, mutta sitä ei ole vielä aktivoitu."
+    }
+  },
+  "actions": {
+    "pid": "Pyydä PID",
+    "poa": "Pyydä PoA",
+    "eucc": "Pyydä EUCC",
+    "review": "Kokoa tarkistus",
+    "vatIssuance": "Aloita myöntäminen",
+    "issuanceStatus": "Tarkista myöntämisen tila",
+    "restartVatIssuance": "Käynnistä myöntäminen uudelleen"
+  },
+  "wallets": {
+    "interactionLabels": {
+      "local-mock-wallet": "Paikallinen mallilompakko tässä sovelluksessa",
+      "external-wallet-app": "Ulkoinen lompakkosovellus"
+    },
+    "credentialStatusLabels": {
+      "seeded": "Lisätty paikallisesti",
+      "offer-created": "OID4VCI-tarjous valmis",
+      "issued": "Myönnetty lompakkoon"
+    },
+    "seedOptions": [
+      { "credentialType": "pid", "label": "Lisää PID henkilölompakkoon" },
+      { "credentialType": "poa", "label": "Lisää PoA henkilölompakkoon" },
+      { "credentialType": "eucc", "label": "Lisää EUCC yrityslompakkoon" }
+    ]
+  },
+  "vendors": {
+    "mock-local": {
+      "label": "Paikallinen mallitoimittaja",
+      "description": "Paikallinen mallivirta, jossa kaikki vaiheet pysyvät localhost-ympäristössä.",
+      "badge": "Paikallinen demo"
+    },
+    "igrant-sandbox": {
+      "label": "iGrant Sandbox -muoto",
+      "description": "Esikatseluprofiili tulevaa sovitinpohjaista toimittajaintegraatiota varten.",
+      "badge": "Sovitinvalmis"
+    }
+  },
+  "landing": {
+    "title": "Paikallinen ALV-todistuksen testipolku",
+    "intro": "Valitse toimittajaprofiili, esitäytä testitunnukset ja etene orkestrointivirran läpi sivu kerrallaan.",
+    "secondaryIntro": "Tämä sovellus on paikallinen testityötila lompakoiden esitäyttöön, istuntojen orkestrointiin ja toimittajakohtaisiin tunnistevaihtoihin ennen kuin jokainen työnkulun sivu saa lopullisen tehtäväkohtaisen käyttöliittymänsä.",
+    "startWorkflow": "Aloita työnkulku",
+    "journeyEyebrow": "Polku",
+    "journeyTitle": "Työnkulun sivut",
+    "journeyCopy": "Työnkulku on nyt jaettu erillisille sivuille, jotta jokainen vaihe voi kehittyä itsenäisesti ilman että kaikki ohjaimet ja todistusaineistopaneelit pitää sovittaa yhdelle näytölle.",
+    "journeyGridAria": "Työnkulun sivut",
+    "stepNumber": "Vaihe",
+    "openPage": "Avaa sivu",
+    "openPageAria": "Avaa sivu {label}"
+  },
+  "workflowStep": {
+    "requestHeading": {
+      "pid": "PID-esityspyyntö",
+      "poa": "PoA-esityspyyntö",
+      "eucc": "EUCC-esityspyyntö"
+    },
+    "requestDescription": {
+      "pid": "Skannaa QR-koodi lompakolla avataksesi iGrantin varmennuspyynnön ja aloittaaksesi PID-tietojen siirron takaisin varmennuspalvelulle.",
+      "poa": "Skannaa QR-koodi lompakolla avataksesi iGrantin varmennuspyynnön ja aloittaaksesi PoA-tietojen siirron takaisin varmennuspalvelulle.",
+      "eucc": "Skannaa QR-koodi yrityslompakolla avataksesi iGrantin varmennuspyynnön ja aloittaaksesi EUCC-tietojen siirron takaisin varmennuspalvelulle."
+    },
+    "requestQrAlt": {
+      "pid": "PID-esityspyynnön QR-koodi",
+      "poa": "PoA-esityspyynnön QR-koodi",
+      "eucc": "EUCC-esityspyynnön QR-koodi"
+    },
+    "cancelMessage": {
+      "pid": "PID-pyyntö peruttu.",
+      "poa": "PoA-pyyntö peruttu.",
+      "eucc": "EUCC-pyyntö peruttu."
+    },
+    "reRequestLabel": {
+      "pid": "Pyydä PID uudelleen",
+      "poa": "Pyydä PoA uudelleen",
+      "eucc": "Pyydä EUCC uudelleen"
+    },
+    "heroIntro": {
+      "pid": "Pyydä normalisoitu PID-tietue henkilölompakosta. Tämä vaihe simuloi käyttäjän tunnistamista palvelussa.",
+      "poa": "Pyydä normalisoitu valtakirjatodiste henkilölompakosta. Tämä simuloi valtuutuksen todentamista ennen yrityksen puolesta tehtäviä toimia.",
+      "eucc": "Pyydä normalisoitu organisaatiotodiste yrityslompakosta. Tämä simuloi EUCC:n vastaanottamista yrityksen todentamiseksi.",
+      "review": "Tarkista kerätyt tiedot ja varmista, että löydetty ALV-todistus vastaa käytettävissä olevia tietoja.",
+      "vatIssuance": "Lähetä ALV-todistuksen myöntöpyyntö ja seuraa, miten normalisoitu myöntötulos etenee."
+    },
+    "heroSecondaryIntro": "Tämä simuloi tarkistusvaihetta, jossa kerättyjä tietoja käytetään saatavilla olevien ALV-todistusten löytämiseen. Tällä hetkellä vain testidata vastaa todistusta.",
+    "currentContext": "Nykyinen konteksti",
+    "currentContextFields": {
+      "vendor": "Toimittaja",
+      "sessionId": "Istunnon tunniste",
+      "lifecycle": "Elinkaari",
+      "walletLane": "Lompakkokaista",
+      "apiHealth": "API:n tila",
+      "sessionApi": "Istunto-API"
+    },
+    "issuanceDetails": "Myöntämisen tiedot",
+    "issuanceFields": {
+      "vatId": "ALV-tunniste",
+      "exchangeId": "Vaihto-ID",
+      "administrativeUnit": "Hallinnollinen yksikkö",
+      "issuer": "Myöntäjä",
+      "country": "Maa",
+      "issuedAt": "Myönnetty",
+      "organisation": "Organisaatio",
+      "status": "Tila"
+    },
+    "submitVatIssuance": "Lähetä ALV-myöntö",
+    "currentStepFailed": "Nykyinen vaihe epäonnistui normalisoidussa istuntotilassa. Yritä toiminto uudelleen tämän vaiheen kortista, kun olet valmis."
+  },
+  "review": {
+    "person": "Henkilö",
+    "company": "Yritys",
+    "poa": "PoA",
+    "eucc": "EUCC",
+    "matchedVatAttestation": "Täsmätty ALV-todistus",
+    "assembledAt": "Koottu",
+    "matchedHint": "Täsmäytetty varmennetun EUCC-yrityksen perusteella ennen myöntämistä.",
+    "automaticHint": "Tarkistusnäkymä ilmestyy automaattisesti, kun PID, PoA ja EUCC ovat onnistuneet."
+  },
+  "fields": {
+    "fullName": "Koko nimi",
+    "name": "Nimi",
+    "dateOfBirth": "Syntymäaika",
+    "issuer": "Myöntäjä",
+    "issuerWithPrefix": "Myöntäjä",
+    "attorney": "Valtuutettu",
+    "principal": "Päämies",
+    "scope": "Laajuus",
+    "company": "Yritys",
+    "legalForm": "Oikeudellinen muoto",
+    "memberState": "Jäsenvaltio",
+    "nationality": "Kansalaisuus",
+    "companyId": "Yritystunnus",
+    "jurisdiction": "Toimivalta-alue",
+    "registeredAddress": "Rekisteröity osoite",
+    "representatives": "Edustajat",
+    "economicOperator": "Taloudellinen toimija",
+    "operatorId": "Toimijan tunnus",
+    "holder": "Haltija",
+    "credential": "Todiste",
+    "exchangeId": "Vaihto-ID",
+    "requestUri": "Pyyntö-URI",
+    "presentationDefinition": "Esitysmäärittely",
+    "pin": "PIN"
+  },
+  "sessionSection": {
+    "eyebrow": "Luo työnkulku",
+    "title": "Valmistele paikallinen työnkulkuistunto",
+    "copy": "Valitse paikallinen toimittajaprofiili ja tarkista käytettävissä oleva istuntotila ennen kuin vaiheittainen kulku yhdistetään eläviin toimintoihin.",
+    "vendorProfile": "Toimittajaprofiili",
+    "vendorLabel": "Toimittaja",
+    "serviceStatus": "Palvelun tila",
+    "frontend": "Käyttöliittymä",
+    "apiHealth": "API:n tila",
+    "apiBaseUrl": "API-perus-URL",
+    "sessionApi": "Istunto-API",
+    "sessionId": "Istunnon tunniste",
+    "startNewSession": "Aloita uusi istunto",
+    "testCredentials": "Testitunnukset",
+    "walletCredentials": "Myönnetyt tunnukset",
+    "testCredentialCopy": {
+      "externalWallets": "Tämä toimittaja luo oikeita lompakkotarjouksia esitäytetyille testitunnuksille. Käytä alla olevaa QR-koodia, kun PID-myöntäjän yhteys ilmestyy.",
+      "localWallets": "Tämä toimittaja tukee paikallista mallilompakon esitäyttöä, joten lompakot voidaan valmistella ennen toimittajapohjaisia vaiheita.",
+      "noWalletSeeding": "Tämä toimittaja ei tarjoa paikallista mallilompakon esitäyttöä. Tunnusten tila saadaan takaisin vain toimittajasovittimen toimintojen kautta."
+    },
+    "pidIssuerConnection": "PID-myöntäjän yhteys",
+    "pidIssuerDescription": "Käytä tätä QR-koodia tai syvälinkkiä avataksesi lompakon ja hyväksyäksesi myöntäjän PID-tarjouksen.",
+    "pidIssuerQrAlt": "PID-myöntäjän yhteyden QR-koodi",
+    "personalWallet": "Henkilölompakko",
+    "companyWallet": "Yrityslompakko",
+    "reviewPayload": "Tarkistuskooste",
+    "reviewPayloadSummary": "Kokoa PID, yritys, PoA ja EUCC yhdeksi tarkistusobjektiksi.",
+    "reviewPayloadEmpty": "Tarkistuskooste ilmestyy automaattisesti, kun PID, PoA ja EUCC onnistuvat. Tästä kortista tulee näkyvä lähetyspinta ALV-myöntämiselle.",
+    "operatorStep": "Operaattorin vaihe",
+    "submissionResult": "Lähetyksen tulos",
+    "issuanceResult": "Myöntämisen tulos",
+    "issuanceResultSummary": "ALV-myöntämisen tulos näkyy täällä lähetyksen jälkeen. Odottavissa toimittajatilanteissa eteneminen voi jatkua myöhempään tilapäivitykseen asti.",
+    "issuanceResultEmpty": "ALV-myöntämisen tulos näkyy täällä varsinaisen lähetyksen jälkeen. Odottavat toimittajatilat voivat jatkua keskeneräisinä myöhempään tilapäivitykseen asti.",
+    "refreshIssuanceStatus": "Päivitä myöntämisen tila",
+    "sessionOverview": "Istunnon yleiskuva",
+    "sessionOverviewCopy1": "Aloitussivu kokoaa nyt toimittajan valinnan, palvelun tilan ja testitunnusten valmistelun yhteen paikkaan niin, että aktiivinen istuntotunniste näkyy suoraan tilalohkossa.",
+    "sessionOverviewCopy2": "Paikallinen mallitoimittaja toimii nyt suoraan sivulta onnistumis- ja epäonnistumissimulaatioilla jokaiselle vaiheelle.",
+    "reviewPayloadCardsAria": "Tarkistuskoosteen kortit"
+  },
+  "history": {
+    "eyebrow": "Historia",
+    "title": "Istunnon tapahtumaloki",
+    "listAria": "Istunnon tapahtumaloki"
+  },
+  "evidence": {
+    "stepCopy": {
+      "pid": {
+        "eyebrow": "PID-vaihe",
+        "title": "PID-keruun näkymä",
+        "copy": "Tämä sivu keskittyy henkilöllisyystodisteiden keräämiseen henkilölompakosta ennen kuin seuraavat vaiheet tulevat saataville.",
+        "panelTitle": "PID-todiste",
+        "laneBadge": "Henkilölompakko",
+        "emptyCopy": "PID-tietoja ei ole vielä kerätty."
+      },
+      "poa": {
+        "eyebrow": "PoA-vaihe",
+        "title": "PoA-keruun näkymä",
+        "copy": "Tämä sivu keskittyy valtakirjatodisteisiin ja pitää PID-saatavuuden näkyvillä aiemman vaiheen kontekstina.",
+        "panelTitle": "PoA-todiste",
+        "laneBadge": "Henkilölompakko",
+        "emptyCopy": "PoA-tietoja ei ole vielä kerätty."
+      },
+      "eucc": {
+        "eyebrow": "EUCC-vaihe",
+        "title": "EUCC-keruun näkymä",
+        "copy": "Tämä sivu keskittyy yrityslompakosta saataviin organisaatiotodisteisiin ja näyttää niiden rinnalla tarvittavan tunnistautumistilan.",
+        "panelTitle": "EUCC-todiste",
+        "laneBadge": "Yrityslompakko",
+        "emptyCopy": "EUCC-tietoja ei ole vielä kerätty."
+      }
+    },
+    "requestTitle": {
+      "pid": "PID-esityspyyntö",
+      "poa": "PoA-esityspyyntö",
+      "eucc": "EUCC-esityspyyntö"
+    },
+    "requestDescription": {
+      "pid": "Skannaa tämä QR-koodi lompakolla avataksesi iGrantin varmennuspyynnön ja aloittaaksesi PID-tietojen siirron takaisin varmennuspalvelulle.",
+      "poa": "Skannaa tämä QR-koodi lompakolla avataksesi iGrantin varmennuspyynnön ja aloittaaksesi PoA-tietojen siirron takaisin varmennuspalvelulle.",
+      "eucc": "Skannaa tämä QR-koodi yrityslompakolla avataksesi iGrantin varmennuspyynnön ja aloittaaksesi EUCC-tietojen siirron takaisin varmennuspalvelulle."
+    },
+    "qrAlt": {
+      "pid": "PID-esityspyynnön QR-koodi",
+      "poa": "PoA-esityspyynnön QR-koodi",
+      "eucc": "EUCC-esityspyynnön QR-koodi"
+    },
+    "prerequisiteState": "Edellytyksien tila",
+    "dependencyMap": "Riippuvuuskartta",
+    "prerequisiteListAria": "Edellytysvaiheet",
+    "dataOrigin": "Datan alkuperä",
+    "dataOriginCopy": {
+      "mockLocal": "Kaikki alla näkyvät arvot tulevat paikallisista repositorion fixtureistä ja normalisoiduista mallisovittimen vastauksista.",
+      "external": "Tämä toimittaja on mallinnettu käyttämään ulkoisia lompakkosovelluksia, joten arvot näkyvät vasta kun normalisoidut sovitinvastaukset palaavat."
+    },
+    "mockFixture": "Mallidata",
+    "requestCardCopy": {
+      "pid": "Skannaa QR-koodi yhteensopivalla lompakolla esittääksesi PID-tiedot iGrantin OIDC4VP-varmennusvirran kautta.",
+      "poa": "Skannaa QR-koodi yhteensopivalla lompakolla esittääksesi PoA-tiedot iGrantin OIDC4VP-varmennusvirran kautta.",
+      "eucc": "Skannaa QR-koodi yhteensopivalla lompakolla esittääksesi EUCC-tiedot iGrantin OIDC4VP-varmennusvirran kautta."
+    },
+    "prerequisiteWaiting": {
+      "pid": "Odottaa tunnistautumistodistetta",
+      "poa": "Odottaa valtuutustodistetta",
+      "eucc": "Odottaa organisaatiotodistetta",
+      "requestCreated": "Esityspyyntö luotu"
+    },
+    "currentStepFailed": "Nykyinen vaihe epäonnistui normalisoidussa istuntotilassa. Yritä toiminto uudelleen vaiheohjauspaneelista, kun olet valmis."
+  }
+}

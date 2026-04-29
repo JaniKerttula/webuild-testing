@@ -1,7 +1,8 @@
 import type { WalletCredentialSummary } from '@we-build/domain';
 
 import { QrCodePanel } from '../../QrCodePanel.js';
-import { walletCredentialStatusLabels } from '../../workflowUi.js';
+import { getIntlLocale, useI18n } from '../../i18n.js';
+import { getWalletCredentialStatusLabels } from '../../workflowUi.js';
 
 type WorkflowQrPanelProps = {
   title: string;
@@ -25,9 +26,9 @@ type WorkflowQrEvidenceCardProps = {
   className?: string;
 };
 
-export function formatTimestamp(value?: string): string {
+export function formatTimestamp(value?: string, locale: 'fi' | 'en' = 'fi'): string {
   if (!value) {
-    return 'Not available';
+    return locale === 'fi' ? 'Ei saatavilla' : 'Not available';
   }
 
   const date = new Date(value);
@@ -36,7 +37,7 @@ export function formatTimestamp(value?: string): string {
     return value;
   }
 
-  return date.toLocaleString('fi-FI', {
+  return date.toLocaleString(getIntlLocale(locale), {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -55,6 +56,8 @@ export function WorkflowQrPanel({
   primaryAction,
   secondaryAction,
 }: WorkflowQrPanelProps) {
+  const { t } = useI18n();
+
   return (
     <section className="panel pid-offer-panel">
       <div className="panel-heading-inline">
@@ -96,6 +99,8 @@ export function WorkflowQrEvidenceCard({
   deepLink,
   className,
 }: WorkflowQrEvidenceCardProps) {
+  const { t } = useI18n();
+
   return (
     <div className={className ? `wallet-offer-panel ${className}` : 'wallet-offer-panel'}>
       <p className="supporting-copy wallet-offer-copy">{copy}</p>
@@ -103,16 +108,16 @@ export function WorkflowQrEvidenceCard({
         <QrCodePanel value={qrValue} alt={qrAlt} />
         <div className="pid-offer-details">
           <dl className="review-list compact-review-list wallet-offer-meta">
-            <div><dt>Exchange ID</dt><dd>{exchangeId}</dd></div>
-            <div><dt>Request URI</dt><dd>{requestUri}</dd></div>
-            <div><dt>Presentation definition</dt><dd>{presentationDefinitionId}</dd></div>
+            <div><dt>{t.fields.exchangeId}</dt><dd>{exchangeId}</dd></div>
+            <div><dt>{t.fields.requestUri}</dt><dd>{requestUri}</dd></div>
+            <div><dt>{t.fields.presentationDefinition}</dt><dd>{presentationDefinitionId}</dd></div>
           </dl>
           <div className="wallet-offer-actions">
             <a className="primary-action-link" href={deepLink}>
-              Open OIDC4VP request
+              {t.common.openWalletDeepLink}
             </a>
             <a className="secondary-action-link" href={requestUri} target="_blank" rel="noreferrer">
-              Open request URI
+              {t.common.openRequestUri}
             </a>
           </div>
         </div>
@@ -122,6 +127,9 @@ export function WorkflowQrEvidenceCard({
 }
 
 export function WalletCredentialCard({ credential }: { credential: WalletCredentialSummary }) {
+  const { locale, t } = useI18n();
+  const walletCredentialStatusLabels = getWalletCredentialStatusLabels(locale);
+
   return (
     <li className="wallet-credential-card">
       <div className="wallet-credential-header">
@@ -129,27 +137,29 @@ export function WalletCredentialCard({ credential }: { credential: WalletCredent
         <span className="step-state">{walletCredentialStatusLabels[credential.status]}</span>
       </div>
       <span>{credential.holderName}</span>
-      {credential.issuerName ? <span className="supporting-copy">Issuer: {credential.issuerName}</span> : null}
+      {credential.issuerName ? <span className="supporting-copy">{t.fields.issuerWithPrefix}: {credential.issuerName}</span> : null}
 
       {credential.offer ? (
         <div className="wallet-offer-panel">
           <p className="supporting-copy wallet-offer-copy">
-            Scan the QR code with a compatible wallet or open the OID4VCI deep link directly.
+            {locale === 'fi'
+              ? 'Skannaa QR-koodi yhteensopivalla lompakolla tai avaa OID4VCI-syvälinkki suoraan.'
+              : 'Scan the QR code with a compatible wallet or open the OID4VCI deep link directly.'}
           </p>
           <div className="pid-offer-grid">
             <QrCodePanel value={credential.offer.qrCodeValue} alt={`${credential.label} OID4VCI offer`} />
             <div className="pid-offer-details">
               <dl className="review-list compact-review-list wallet-offer-meta">
-                <div><dt>Exchange ID</dt><dd>{credential.offer.exchangeId ?? 'Pending'}</dd></div>
-                <div><dt>PIN</dt><dd>{credential.offer.userPin ?? 'Not required'}</dd></div>
+                <div><dt>{t.fields.exchangeId}</dt><dd>{credential.offer.exchangeId ?? t.common.pending}</dd></div>
+                <div><dt>{t.fields.pin}</dt><dd>{credential.offer.userPin ?? t.common.notRequired}</dd></div>
               </dl>
               <div className="wallet-offer-actions">
                 <a className="primary-action-link" href={credential.offer.offerUri}>
-                  Open OID4VCI deep-link
+                  {t.common.openIssuerDeepLink}
                 </a>
                 {credential.offer.referenceUri ? (
                   <a className="secondary-action-link" href={credential.offer.referenceUri} target="_blank" rel="noreferrer">
-                    Open raw offer URL
+                    {t.common.openRawOfferUrl}
                   </a>
                 ) : null}
               </div>

@@ -1,6 +1,8 @@
-import { workflowStatusLabels, type OrchestrationSession } from '@we-build/domain';
+import type { OrchestrationSession } from '@we-build/domain';
 
 import { PageSection } from '../../components/PageLayout.js';
+import { useI18n } from '../../i18n.js';
+import { getWorkflowStatusLabels } from '../../workflowUi.js';
 import { WorkflowQrEvidenceCard, WorkflowQrPanel } from './WorkflowShared.js';
 
 type WorkflowEvidenceSectionProps = {
@@ -9,34 +11,9 @@ type WorkflowEvidenceSectionProps = {
   focusStep: 'pid' | 'poa' | 'eucc';
 };
 
-const stepCopy = {
-  pid: {
-    eyebrow: 'PID step',
-    title: 'PID collection surface',
-    copy: 'This page focuses on collecting personal identity evidence from the personal wallet before downstream steps become available.',
-    panelTitle: 'PID evidence',
-    laneBadge: 'Personal wallet',
-    emptyCopy: 'No PID data collected yet.',
-  },
-  poa: {
-    eyebrow: 'PoA step',
-    title: 'PoA collection surface',
-    copy: 'This page focuses on power-of-attorney evidence and keeps PID availability visible as upstream context.',
-    panelTitle: 'PoA evidence',
-    laneBadge: 'Personal wallet',
-    emptyCopy: 'No PoA data collected yet.',
-  },
-  eucc: {
-    eyebrow: 'EUCC step',
-    title: 'EUCC collection surface',
-    copy: 'This page focuses on organisation evidence from the company wallet and shows the prerequisite identity state alongside it.',
-    panelTitle: 'EUCC evidence',
-    laneBadge: 'Company wallet',
-    emptyCopy: 'No EUCC data collected yet.',
-  },
-} as const;
-
 export function WorkflowEvidenceSection({ session, isMockLocalVendor, focusStep }: WorkflowEvidenceSectionProps) {
+  const { locale, t } = useI18n();
+  const workflowStatusLabels = getWorkflowStatusLabels(locale);
   const pidStepData = session?.pid.data;
   const pidRecord = pidStepData?.record;
   const pidPresentationRequest = pidStepData?.request;
@@ -46,85 +23,85 @@ export function WorkflowEvidenceSection({ session, isMockLocalVendor, focusStep 
   const euccStepData = session?.eucc.data;
   const euccRecord = euccStepData?.record;
   const euccPresentationRequest = euccStepData?.request;
-  const focusedConfig = stepCopy[focusStep];
+  const focusedConfig = t.evidence.stepCopy[focusStep];
 
   const focusedContent = focusStep === 'pid'
     ? {
         status: session?.pid.status ?? 'not-started',
-        requestTitle: 'PID presentation request',
-        requestDescription: 'Scan this QR code with the wallet to open the iGrant verification request and start transferring PID data back to the verifier.',
+        requestTitle: t.evidence.requestTitle.pid,
+        requestDescription: t.evidence.requestDescription.pid,
         request: pidPresentationRequest,
-        qrAlt: 'PID presentation request QR code',
+        qrAlt: t.evidence.qrAlt.pid,
         record: pidRecord,
         recordView: pidRecord ? (
           <dl className="review-list compact-review-list">
-            <div><dt>Full name</dt><dd>{pidRecord.fullName}</dd></div>
-            <div><dt>Date of birth</dt><dd>{pidRecord.dateOfBirth}</dd></div>
-            <div><dt>Issuer</dt><dd>{pidRecord.issuerName}</dd></div>
+            <div><dt>{t.fields.fullName}</dt><dd>{pidRecord.fullName}</dd></div>
+            <div><dt>{t.fields.dateOfBirth}</dt><dd>{pidRecord.dateOfBirth}</dd></div>
+            <div><dt>{t.fields.issuer}</dt><dd>{pidRecord.issuerName}</dd></div>
           </dl>
         ) : null,
       }
     : focusStep === 'poa'
       ? {
           status: session?.poa.status ?? 'not-started',
-          requestTitle: 'PoA presentation request',
-          requestDescription: 'Scan this QR code with the wallet to open the iGrant verification request and start transferring PoA data back to the verifier.',
+          requestTitle: t.evidence.requestTitle.poa,
+          requestDescription: t.evidence.requestDescription.poa,
           request: poaPresentationRequest,
-          qrAlt: 'PoA presentation request QR code',
+          qrAlt: t.evidence.qrAlt.poa,
           record: poaRecord,
           recordView: poaRecord ? (
             <dl className="review-list compact-review-list">
-              <div><dt>Attorney</dt><dd>{poaRecord.attorneyName}</dd></div>
-              <div><dt>Principal</dt><dd>{poaRecord.principalName}</dd></div>
-              <div><dt>Scope</dt><dd>{poaRecord.scope.join(', ')}</dd></div>
+              <div><dt>{t.fields.attorney}</dt><dd>{poaRecord.attorneyName}</dd></div>
+              <div><dt>{t.fields.principal}</dt><dd>{poaRecord.principalName}</dd></div>
+              <div><dt>{t.fields.scope}</dt><dd>{poaRecord.scope.join(', ')}</dd></div>
             </dl>
           ) : null,
         }
       : {
           status: session?.eucc.status ?? 'not-started',
-          requestTitle: 'EUCC presentation request',
-          requestDescription: 'Scan this QR code with the company wallet to open the iGrant verification request and start transferring EUCC data back to the verifier.',
+          requestTitle: t.evidence.requestTitle.eucc,
+          requestDescription: t.evidence.requestDescription.eucc,
           request: euccPresentationRequest,
-          qrAlt: 'EUCC presentation request QR code',
+          qrAlt: t.evidence.qrAlt.eucc,
           record: euccRecord,
           recordView: euccRecord ? (
             <dl className="review-list compact-review-list">
-              <div><dt>Company</dt><dd>{euccRecord.companyName}</dd></div>
-              <div><dt>Legal form</dt><dd>{euccRecord.legalForm}</dd></div>
-              <div><dt>Member state</dt><dd>{euccRecord.registrationMemberState}</dd></div>
+              <div><dt>{t.fields.company}</dt><dd>{euccRecord.companyName}</dd></div>
+              <div><dt>{t.fields.legalForm}</dt><dd>{euccRecord.legalForm}</dd></div>
+              <div><dt>{t.fields.memberState}</dt><dd>{euccRecord.registrationMemberState}</dd></div>
             </dl>
           ) : null,
         };
 
   const prerequisiteItems = [
     {
-      label: 'PID identification',
+      label: t.navigation.stepLabels.pid,
       status: session?.pid.status ?? 'not-started',
       detail: pidRecord
         ? pidRecord.fullName
         : pidPresentationRequest
-          ? 'Presentation request created'
-          : 'Waiting for identity evidence',
+          ? t.evidence.prerequisiteWaiting.requestCreated
+          : t.evidence.prerequisiteWaiting.pid,
     },
     {
-      label: 'PoA collection',
+      label: t.navigation.stepLabels.poa,
       status: session?.poa.status ?? 'not-started',
       detail: poaRecord
         ? poaRecord.attorneyName
         : poaPresentationRequest
-          ? 'Presentation request created'
-          : 'Waiting for authorization evidence',
+          ? t.evidence.prerequisiteWaiting.requestCreated
+          : t.evidence.prerequisiteWaiting.poa,
     },
     {
-      label: 'EUCC collection',
+      label: t.navigation.stepLabels.eucc,
       status: session?.eucc.status ?? 'not-started',
       detail: euccRecord
         ? euccRecord.companyName
         : euccPresentationRequest
-          ? 'Presentation request created'
-          : 'Waiting for organisation evidence',
+          ? t.evidence.prerequisiteWaiting.requestCreated
+          : t.evidence.prerequisiteWaiting.eucc,
     },
-  ].filter((item) => item.label !== (focusStep === 'pid' ? 'PID identification' : focusStep === 'poa' ? 'PoA collection' : 'EUCC collection'));
+  ].filter((item) => item.label !== t.navigation.stepLabels[focusStep]);
 
   return (
     <PageSection
@@ -142,21 +119,21 @@ export function WorkflowEvidenceSection({ session, isMockLocalVendor, focusStep 
           qrValue={focusedContent.request.qrCodeValue}
           qrAlt={focusedContent.qrAlt}
           metadata={[
-            { label: 'Exchange ID', value: focusedContent.request.exchangeId ?? 'Pending' },
-            { label: 'Request URI', value: focusedContent.request.requestUri },
-            { label: 'Presentation definition', value: focusedContent.request.presentationDefinitionId ?? 'Dynamic' },
+            { label: t.fields.exchangeId, value: focusedContent.request.exchangeId ?? t.common.pending },
+            { label: t.fields.requestUri, value: focusedContent.request.requestUri },
+            { label: t.fields.presentationDefinition, value: focusedContent.request.presentationDefinitionId ?? t.common.dynamic },
           ]}
-          primaryAction={{ href: focusedContent.request.openId4VpUri, label: 'Open wallet deep-link' }}
-          secondaryAction={{ href: focusedContent.request.requestUri, label: 'Open request URI' }}
+          primaryAction={{ href: focusedContent.request.openId4VpUri, label: t.common.openWalletDeepLink }}
+          secondaryAction={{ href: focusedContent.request.requestUri, label: t.common.openRequestUri }}
         />
       ) : null}
 
       <div className="message-box">
-        <strong>Data origin</strong>
+        <strong>{t.evidence.dataOrigin}</strong>
         <p>
           {isMockLocalVendor
-            ? 'All values shown below come from local repository fixtures and normalized mock adapter responses.'
-            : 'This vendor is modeled to use external wallet applications, so values appear only when normalized adapter responses are returned.'}
+            ? t.evidence.dataOriginCopy.mockLocal
+            : t.evidence.dataOriginCopy.external}
         </p>
       </div>
 
@@ -169,20 +146,20 @@ export function WorkflowEvidenceSection({ session, isMockLocalVendor, focusStep 
 
           <article className="evidence-card" data-state={focusedContent.status}>
             <div className="evidence-card-top">
-              <h4>{focusStep === 'pid' ? 'PID identification' : focusStep === 'poa' ? 'PoA collection' : 'EUCC collection'}</h4>
+              <h4>{t.navigation.stepLabels[focusStep]}</h4>
               <div className="evidence-badges">
                 <span className="step-state">{workflowStatusLabels[focusedContent.status]}</span>
-                {isMockLocalVendor ? <span className="mock-badge">Mock fixture</span> : null}
+                {isMockLocalVendor ? <span className="mock-badge">{t.evidence.mockFixture}</span> : null}
               </div>
             </div>
             {focusedContent.recordView ? focusedContent.recordView : focusedContent.request ? (
               <WorkflowQrEvidenceCard
-                copy={`Scan the QR code with a compatible wallet to present ${focusStep === 'eucc' ? 'EUCC' : focusStep.toUpperCase()} through the live iGrant OIDC4VP verifier flow.`}
+                copy={t.evidence.requestCardCopy[focusStep]}
                 qrValue={focusedContent.request.qrCodeValue}
                 qrAlt={focusedContent.qrAlt}
-                exchangeId={focusedContent.request.exchangeId ?? 'Pending'}
+                exchangeId={focusedContent.request.exchangeId ?? t.common.pending}
                 requestUri={focusedContent.request.requestUri}
-                presentationDefinitionId={focusedContent.request.presentationDefinitionId ?? 'Dynamic'}
+                presentationDefinitionId={focusedContent.request.presentationDefinitionId ?? t.common.dynamic}
                 deepLink={focusedContent.request.openId4VpUri}
               />
             ) : (
@@ -193,11 +170,11 @@ export function WorkflowEvidenceSection({ session, isMockLocalVendor, focusStep 
 
         <section className="panel evidence-column">
           <div className="panel-heading-inline">
-            <strong>Prerequisite state</strong>
-            <span className="vendor-badge">Dependency map</span>
+            <strong>{t.evidence.prerequisiteState}</strong>
+            <span className="vendor-badge">{t.evidence.dependencyMap}</span>
           </div>
 
-          <ul className="history-list prerequisite-list" aria-label="Prerequisite steps">
+          <ul className="history-list prerequisite-list" aria-label={t.evidence.prerequisiteListAria}>
             {prerequisiteItems.map((item) => (
               <li key={item.label}>
                 <div className="history-meta">
@@ -212,7 +189,7 @@ export function WorkflowEvidenceSection({ session, isMockLocalVendor, focusStep 
           {session?.[focusStep].error?.message ? (
             <div className="message-box step-error-box">
               <strong>{session[focusStep].error?.message}</strong>
-              <p>The current step failed in the normalized session state. Retry the action from the step control panel when ready.</p>
+              <p>{t.evidence.currentStepFailed}</p>
             </div>
           ) : null}
         </section>

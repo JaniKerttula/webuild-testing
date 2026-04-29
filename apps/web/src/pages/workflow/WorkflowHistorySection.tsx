@@ -1,7 +1,8 @@
-import { workflowStatusLabels, type OrchestrationSession } from '@we-build/domain';
+import type { OrchestrationSession } from '@we-build/domain';
 
 import { PageSection } from '../../components/PageLayout.js';
-import { actionLabels } from '../../workflowUi.js';
+import { useI18n } from '../../i18n.js';
+import { getActionLabels, getWorkflowStatusLabels } from '../../workflowUi.js';
 import { formatTimestamp } from './WorkflowShared.js';
 
 type WorkflowHistorySectionProps = {
@@ -9,12 +10,15 @@ type WorkflowHistorySectionProps = {
 };
 
 export function WorkflowHistorySection({ session }: WorkflowHistorySectionProps) {
+  const { locale, t } = useI18n();
+  const actionLabels = getActionLabels(locale);
+  const workflowStatusLabels = getWorkflowStatusLabels(locale);
   const eventLogEntries = session?.eventLog.slice().reverse() ?? [];
 
   return (
-    <PageSection id="session-history" eyebrow="History" title="Session event log">
+    <PageSection id="session-history" eyebrow={t.history.eyebrow} title={t.history.title}>
       <section className="panel">
-        <ul className="history-list" aria-label="Session event log">
+        <ul className="history-list" aria-label={t.history.listAria}>
           {eventLogEntries.length ? eventLogEntries.map((entry, index) => (
             <li key={`${entry.timestamp}-${entry.step}-${index}`}>
               <div className="history-meta">
@@ -24,7 +28,7 @@ export function WorkflowHistorySection({ session }: WorkflowHistorySectionProps)
               <p>{entry.message}</p>
               <time dateTime={entry.timestamp}>{formatTimestamp(entry.timestamp)}</time>
             </li>
-          )) : <li>No session events recorded yet.</li>}
+          )) : <li>{t.common.noEventsYet}</li>}
         </ul>
       </section>
     </PageSection>

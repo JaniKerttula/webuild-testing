@@ -3,20 +3,22 @@
 :root {
   font-family: "Source Sans Pro", "Segoe UI", sans-serif;
   color: #1a1a1a;
-  background: #f5f5f5;
+  background: #f0f3f5;
   line-height: 1.5;
   font-weight: 400;
   color-scheme: light;
-  --page-border: #d8d8d8;
-  --page-border-strong: #b5b5b5;
+  --page-border: #d9dde0;
+  --page-border-strong: #b6bdc3;
   --surface: #ffffff;
-  --surface-soft: #f7f7f7;
-  --page-background: #f5f5f5;
-  --muted-text: #5f6368;
-  --accent: #003479;
-  --accent-soft: #e9eef7;
+  --surface-soft: #f7f8f9;
+  --page-background: #f0f3f5;
+  --muted-text: #58616a;
+  --accent: #003b7a;
+  --accent-soft: #e8f1fb;
   --text-strong: #1a1a1a;
+  --text-default: #2f3a43;
   --shadow-soft: 0 1px 2px rgba(41, 41, 41, 0.14), 0 1px 5px rgba(41, 41, 41, 0.12);
+  --radius-soft: 2px;
 }
 
 * {
@@ -28,6 +30,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background: var(--page-background);
+  color: var(--text-default);
 }
 
 #root {
@@ -105,8 +108,8 @@ h4 {
 .site-footer-inner {
   width: min(1600px, 100%);
   margin: 0 auto;
-  padding-left: 16px;
-  padding-right: 16px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 .site-header-inner {
@@ -114,8 +117,8 @@ h4 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-top: 16px;
-  padding-bottom: 16px;
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
 
 .brand-lockup {
@@ -131,16 +134,28 @@ h4 {
 }
 
 .brand-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   color: var(--accent);
   font-size: 28px;
   font-weight: 600;
   line-height: 1;
+  letter-spacing: 0.01em;
+}
+
+.brand-title-icon {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 
 a {
@@ -149,18 +164,36 @@ a {
 }
 
 .language-link {
+  border: 1px solid transparent;
+  border-radius: var(--radius-soft);
+  padding: 6px 8px;
+  background: transparent;
   color: var(--text-strong);
-}
-
-.language-link {
-  margin-left: 4px;
   font-size: 22px;
   font-weight: 600;
   line-height: 1;
   text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.language-link:hover:not(:disabled) {
+  color: var(--accent);
+}
+
+.language-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.language-link:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .current-language {
+  border-color: var(--page-border);
+  background: var(--surface-soft);
   color: var(--accent);
 }
 
@@ -184,6 +217,7 @@ a {
   gap: 12px;
   padding-top: 16px;
   padding-bottom: 24px;
+  justify-content: center;
 }
 
 .overview-grid {
@@ -195,7 +229,7 @@ a {
 }
 
 .page-content {
-  padding-top: 16px;
+  padding-top: 24px;
   padding-bottom: 48px;
 }
 
@@ -203,6 +237,7 @@ a {
 .frontpage-card {
   background: var(--surface);
   box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-soft);
 }
 
 .intro-card {
@@ -284,6 +319,7 @@ a {
   background: linear-gradient(180deg, #ffffff 0%, #f7f9fc 100%);
   border: 1px solid var(--page-border);
   box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-soft);
 }
 
 .journey-card-head {
@@ -397,7 +433,7 @@ a {
 .intro {
   max-width: 900px;
   margin: 0;
-  color: #31353a;
+  color: var(--text-default);
   font-size: 18px;
 }
 
@@ -422,6 +458,7 @@ a {
   box-shadow: var(--shadow-soft);
   margin: 0 auto 20px;
   padding: 24px;
+  border-radius: var(--radius-soft);
 }
 
 .section-intro {
@@ -443,7 +480,7 @@ a {
 .section-copy {
   max-width: 720px;
   margin: 0 0 16px;
-  color: #3f4a51;
+  color: var(--text-default);
 }
 
 .service-grid {
@@ -471,13 +508,9 @@ a {
   gap: 24px;
 }
 
-.unified-wallet-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .wallet-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(240px, 1fr));
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
   gap: 16px;
 }
 
@@ -533,6 +566,7 @@ a {
   padding: 12px;
   border: 1px solid var(--page-border);
   background: var(--surface-soft);
+  border-radius: var(--radius-soft);
 }
 
 .evidence-card-top {
@@ -570,6 +604,7 @@ a {
   background: var(--surface);
   box-shadow: var(--shadow-soft);
   padding: 16px;
+  border-radius: var(--radius-soft);
 }
 
 .panel-heading-inline {
@@ -666,9 +701,19 @@ a {
   padding: 10px 14px;
   border: 1px solid var(--page-border-strong);
   background: #fff;
-  color: var(--text-strong);
+  color: var(--accent);
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
+  border-radius: var(--radius-soft);
+  transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+}
+
+.action-button:hover:not(:disabled),
+.primary-action-link:hover,
+.secondary-action-link:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .action-button:disabled {
@@ -678,6 +723,7 @@ a {
 
 .action-button-secondary {
   background: var(--surface-soft);
+  color: var(--text-strong);
 }
 
 .card-grid {
@@ -695,6 +741,7 @@ a {
   border: 1px solid var(--page-border);
   background: var(--surface);
   box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-soft);
 }
 
 .step-card-top {
@@ -786,6 +833,7 @@ a {
   padding: 12px;
   border: 1px solid var(--page-border);
   background: var(--surface-soft);
+  border-radius: var(--radius-soft);
 }
 
 .wallet-credential-header {
@@ -885,6 +933,7 @@ a {
   padding: 12px;
   border: 1px solid var(--page-border);
   background: var(--surface-soft);
+  border-radius: var(--radius-soft);
 }
 
 .review-highlight-block {
@@ -964,6 +1013,10 @@ a {
   margin-top: auto;
 }
 
+.site-footer a {
+  color: var(--accent);
+}
+
 .site-footer-inner {
   display: flex;
   flex-wrap: wrap;
@@ -974,6 +1027,51 @@ a {
   padding-bottom: 30px;
   text-align: center;
   max-width: 1200px;
+}
+
+@media (max-width: 991px) {
+  .site-header-inner,
+  .top-navigation-inner,
+  .page-content,
+  .site-footer-inner {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .intro-card,
+  .main-section,
+  .journey-card,
+  .panel,
+  .step-card,
+  .frontpage-card {
+    padding: 16px;
+  }
+
+  .page-content {
+    padding-top: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-footer-link-group {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .language-link {
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .language-link,
+  .action-button,
+  .primary-action-link,
+  .secondary-action-link {
+    transition: none;
+  }
 }
 
 @media (max-width: 760px) {

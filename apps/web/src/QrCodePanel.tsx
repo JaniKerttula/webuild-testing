@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { toDataURL } from 'qrcode';
 
+import { useI18n } from './i18n.js';
+
 type QrCodePanelProps = {
   value: string;
   alt: string;
 };
 
 export function QrCodePanel({ value, alt }: QrCodePanelProps) {
+  const { t } = useI18n();
   const [dataUrl, setDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -40,10 +43,10 @@ export function QrCodePanel({ value, alt }: QrCodePanelProps) {
       {dataUrl ? (
         <img className="qr-code-image" src={dataUrl} alt={alt} />
       ) : (
-        <div className="qr-code-placeholder">Generating QR code...</div>
+        <div className="qr-code-placeholder">{t.common.generatingQrCode}</div>
       )}
       <details className="qr-code-value-disclosure">
-        <summary>Show raw QR input</summary>
+        <summary>{t.common.showRawQrInput}</summary>
         <p className="qr-code-value">{value}</p>
       </details>
     </div>

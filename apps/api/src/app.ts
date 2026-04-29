@@ -33,8 +33,24 @@ export type AppDependencies = {
   logger?: Logger;
   executionConfig?: VendorExecutionConfig;
   apiPort?: number;
-  corsOrigin?: string;
+  corsOrigin?: string | string[];
 };
+
+function getCorsOrigins(corsOrigin?: string | string[]): string[] {
+  if (Array.isArray(corsOrigin)) {
+    return corsOrigin;
+  }
+
+  if (typeof corsOrigin === 'string') {
+    return corsOrigin.split(',').map((origin) => origin.trim()).filter(Boolean);
+  }
+
+  return [];
+}
+
+function isAllowedLoopbackOrigin(origin: string): boolean {
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+}
 
 function normalizeStepStatus(result: AdapterOperationResult<unknown>): 'succeeded' | 'pending' | 'failed' {
   return result.status;
@@ -123,11 +139,25 @@ export function createApp(dependencies: AppDependencies = {}) {
   const getAdapter = dependencies.getAdapter ?? getVendorAdapter;
   const hasAdapter = dependencies.hasAdapter ?? hasVendorAdapter;
   const listAdapters = dependencies.listAdapters ?? listVendorAdapters;
-  const corsOrigin = dependencies.corsOrigin ?? process.env.CORS_ORIGIN ?? 'http://localhost:5173';
+  const corsOrigins = getCorsOrigins(dependencies.corsOrigin ?? process.env.CORS_ORIGIN);
   const apiPort = dependencies.apiPort ?? Number(process.env.API_PORT ?? '4000');
   const executionConfig = dependencies.executionConfig ?? readExecutionConfig();
 
-  app.use(cors({ origin: corsOrigin }));
+  app.use(cors({
+    origin(origin, callback) {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (corsOrigins.length > 0) {
+        callback(null, corsOrigins.includes(origin));
+        return;
+      }
+
+      callback(null, isAllowedLoopbackOrigin(origin));
+    },
+  }));
   app.use(express.json());
   app.use((request, response, next) => {
     const startedAt = Date.now();

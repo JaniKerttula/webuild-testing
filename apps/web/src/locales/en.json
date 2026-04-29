@@ -1,0 +1,323 @@
+{
+  "shell": {
+    "brandTitle": "WE BUILD VAT Issuance Test",
+    "languageSwitcherLabel": "Language switcher",
+    "footerLinks": {
+      "dataProtection": "Data protection",
+      "accessibility": "Accessibility statement",
+      "contactInformation": "Contact information"
+    }
+  },
+  "common": {
+    "loading": "Loading",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "fail": "Fail",
+    "continueToNextStep": "Continue to next step",
+    "notAvailable": "Not available",
+    "pending": "Pending",
+    "dynamic": "Dynamic",
+    "notRequired": "Not required",
+    "notLoadedYet": "Not loaded yet",
+    "notAssignedYet": "Not assigned yet",
+    "noEventsYet": "No session events recorded yet.",
+    "noCredentialsLoaded": "No credentials loaded.",
+    "generatingQrCode": "Generating QR code...",
+    "showRawQrInput": "Show raw QR input",
+    "openRequestUri": "Open request URI",
+    "openWalletDeepLink": "Open wallet deep-link",
+    "openIssuerDeepLink": "Open OID4VCI deep-link",
+    "openRawOfferUrl": "Open raw offer URL",
+    "loadingVendor": "Loading vendor",
+    "loadingVendorDefinitions": "Loading vendor definitions from the local API.",
+    "notLoaded": "Not loaded",
+    "localShellActive": "Local shell active"
+  },
+  "navigation": {
+    "landing": "Landing",
+    "workflowBreadcrumbAria": "Workflow breadcrumb trail",
+    "stepLabels": {
+      "pid": "Identification",
+      "poa": "Mandate",
+      "eucc": "Company",
+      "review": "Review",
+      "vatIssuance": "Issuance"
+    },
+    "stepDescriptions": {
+      "pid": "Request identity evidence from the personal wallet and start the paginated flow.",
+      "poa": "Request power-of-attorney evidence from the personal wallet for the following steps.",
+      "eucc": "Request organisation evidence from the company wallet for verification.",
+      "review": "Assemble the collected data into a review object and compare it to VAT attestations.",
+      "vatIssuance": "Submit the issuance request and track the normalized result."
+    }
+  },
+  "statuses": {
+    "workflow": {
+      "not-started": "Not started",
+      "ready": "Ready",
+      "blocked": "Blocked",
+      "pending": "Pending",
+      "succeeded": "Succeeded",
+      "failed": "Failed"
+    },
+    "notes": {
+      "ready": "This step is available in the current normalized session state.",
+      "blocked": "This step is intentionally gated by upstream workflow dependencies.",
+      "pending": "This step would currently be waiting for a vendor or session API response.",
+      "succeeded": "This step has normalized data ready for downstream screens.",
+      "failed": "This step would expose a normalized error and a retry path.",
+      "not-started": "This step exists in the model but has not been activated yet."
+    }
+  },
+  "actions": {
+    "pid": "Request PID",
+    "poa": "Request PoA",
+    "eucc": "Request EUCC",
+    "review": "Assemble review",
+    "vatIssuance": "Start issuance",
+    "issuanceStatus": "Check issuance",
+    "restartVatIssuance": "Restart issuance"
+  },
+  "wallets": {
+    "interactionLabels": {
+      "local-mock-wallet": "Local mock wallet in this app",
+      "external-wallet-app": "External wallet app"
+    },
+    "credentialStatusLabels": {
+      "seeded": "Seeded locally",
+      "offer-created": "OID4VCI offer ready",
+      "issued": "Issued to wallet"
+    },
+    "seedOptions": [
+      { "credentialType": "pid", "label": "Seed PID to personal wallet" },
+      { "credentialType": "poa", "label": "Seed PoA to personal wallet" },
+      { "credentialType": "eucc", "label": "Seed EUCC to company wallet" }
+    ]
+  },
+  "vendors": {
+    "mock-local": {
+      "label": "Local Mock Vendor",
+      "description": "Local mock flow that keeps all steps self-contained on localhost.",
+      "badge": "Local demo"
+    },
+    "igrant-sandbox": {
+      "label": "iGrant Sandbox Shape",
+      "description": "Preview profile for a future adapter-backed vendor integration.",
+      "badge": "Adapter-ready"
+    }
+  },
+  "landing": {
+    "title": "Local VAT attestation test journey",
+    "intro": "Choose a vendor profile, preload test credentials, and walk the orchestration flow page by page.",
+    "secondaryIntro": "This app is a local testing workspace for wallet seeding, session orchestration, and vendor-shaped credential exchange before each workflow page gets its final task-specific UI.",
+    "startWorkflow": "Start workflow",
+    "journeyEyebrow": "Journey",
+    "journeyTitle": "Workflow pages",
+    "journeyCopy": "The workflow is now split into separate pages so each step can evolve independently without forcing every control and evidence panel into a single screen.",
+    "journeyGridAria": "Workflow pages",
+    "stepNumber": "Step",
+    "openPage": "Open page",
+    "openPageAria": "Open {label} page"
+  },
+  "workflowStep": {
+    "requestHeading": {
+      "pid": "PID presentation request",
+      "poa": "PoA presentation request",
+      "eucc": "EUCC presentation request"
+    },
+    "requestDescription": {
+      "pid": "Scan the QR code with the wallet to open the iGrant verification request and start transferring PID data back to the verifier.",
+      "poa": "Scan the QR code with the wallet to open the iGrant verification request and start transferring PoA data back to the verifier.",
+      "eucc": "Scan the QR code with the company wallet to open the iGrant verification request and start transferring EUCC data back to the verifier."
+    },
+    "requestQrAlt": {
+      "pid": "PID presentation request QR code",
+      "poa": "PoA presentation request QR code",
+      "eucc": "EUCC presentation request QR code"
+    },
+    "cancelMessage": {
+      "pid": "PID request canceled.",
+      "poa": "PoA request canceled.",
+      "eucc": "EUCC request canceled."
+    },
+    "reRequestLabel": {
+      "pid": "Re-request PID",
+      "poa": "Re-request PoA",
+      "eucc": "Re-request EUCC"
+    },
+    "heroIntro": {
+      "pid": "Request a normalized PID record from the personal wallet. This step simulates identifying the user in the service.",
+      "poa": "Request normalized power-of-attorney evidence from the personal wallet. This simulates retrieving proof of mandate from the user so that the company-side transactions can begin.",
+      "eucc": "Request normalized organization evidence from the company wallet. This simulates receiving the EUCC from the company to verify the company in question.",
+      "review": "Review the collected data and confirm that the matched VAT attestation is the right one for issuance.",
+      "vatIssuance": "Submit the VAT attestation issuance request and follow how the normalized issuance result progresses."
+    },
+    "heroSecondaryIntro": "This simulates the review phase, where the collected data is used to match against the known VAT attestations that can be issued. Currently only the test data matches an attestation.",
+    "currentContext": "Current context",
+    "currentContextFields": {
+      "vendor": "Vendor",
+      "sessionId": "Session ID",
+      "lifecycle": "Lifecycle",
+      "walletLane": "Wallet lane",
+      "apiHealth": "API health",
+      "sessionApi": "Session API"
+    },
+    "issuanceDetails": "Issuance details",
+    "issuanceFields": {
+      "vatId": "VAT ID",
+      "exchangeId": "Exchange ID",
+      "administrativeUnit": "Administrative unit",
+      "issuer": "Issuer",
+      "country": "Country",
+      "issuedAt": "Issued at",
+      "organisation": "Organisation",
+      "status": "Status"
+    },
+    "submitVatIssuance": "Submit VAT issuance",
+    "currentStepFailed": "The current step failed in the normalized session state. Retry the action from this step card when ready."
+  },
+  "review": {
+    "person": "Person",
+    "company": "Company",
+    "poa": "PoA",
+    "eucc": "EUCC",
+    "matchedVatAttestation": "Matched VAT attestation",
+    "assembledAt": "Assembled at",
+    "matchedHint": "Matched from the verified EUCC company before issuance.",
+    "automaticHint": "The review payload appears automatically after PID, PoA, and EUCC succeed."
+  },
+  "fields": {
+    "fullName": "Full name",
+    "name": "Name",
+    "dateOfBirth": "Date of birth",
+    "issuer": "Issuer",
+    "issuerWithPrefix": "Issuer",
+    "attorney": "Attorney",
+    "principal": "Principal",
+    "scope": "Scope",
+    "company": "Company",
+    "legalForm": "Legal form",
+    "memberState": "Member state",
+    "nationality": "Nationality",
+    "companyId": "Company ID",
+    "jurisdiction": "Jurisdiction",
+    "registeredAddress": "Registered address",
+    "representatives": "Representatives",
+    "economicOperator": "Economic operator",
+    "operatorId": "Operator ID",
+    "holder": "Holder",
+    "credential": "Credential",
+    "exchangeId": "Exchange ID",
+    "requestUri": "Request URI",
+    "presentationDefinition": "Presentation definition",
+    "pin": "PIN"
+  },
+  "sessionSection": {
+    "eyebrow": "Create workflow",
+    "title": "Prepare local workflow session",
+    "copy": "Select the local vendor profile and review the available session state before the step-by-step flow is connected to live actions.",
+    "vendorProfile": "Vendor profile",
+    "vendorLabel": "Vendor",
+    "serviceStatus": "Service status",
+    "frontend": "Frontend",
+    "apiHealth": "API health",
+    "apiBaseUrl": "API base URL",
+    "sessionApi": "Session API",
+    "sessionId": "Session ID",
+    "startNewSession": "Start new session",
+    "testCredentials": "Test credentials",
+    "walletCredentials": "Issued credentials",
+    "testCredentialCopy": {
+      "externalWallets": "This vendor creates real wallet offers for seeded test credentials. Use the QR code below when the PID issuer connection appears.",
+      "localWallets": "This vendor supports local mock credential seeding, so wallets can be preloaded before running vendor-backed steps.",
+      "noWalletSeeding": "This vendor does not expose local mock credential seeding. Credential state must come back through vendor adapter actions."
+    },
+    "pidIssuerConnection": "PID issuer connection",
+    "pidIssuerDescription": "Use this QR code or deep-link to open the wallet and accept the PID credential offer from the issuer.",
+    "pidIssuerQrAlt": "PID issuer connection QR code",
+    "personalWallet": "Personal wallet",
+    "companyWallet": "Company wallet",
+    "reviewPayload": "Review payload",
+    "reviewPayloadSummary": "Assemble PID, company, PoA, and EUCC into one review object.",
+    "reviewPayloadEmpty": "The review payload appears automatically after PID, PoA, and EUCC succeed. This card becomes the explicit submission surface for VAT issuance.",
+    "operatorStep": "Operator step",
+    "submissionResult": "Submission result",
+    "issuanceResult": "Issuance result",
+    "issuanceResultSummary": "VAT issuance output appears here after submission. Pending vendor modes can remain in progress until a later status refresh.",
+    "issuanceResultEmpty": "VAT issuance output appears here after the explicit submit action. Pending vendor modes can stay in progress until a later status refresh.",
+    "refreshIssuanceStatus": "Refresh issuance status",
+    "sessionOverview": "Session overview",
+    "sessionOverviewCopy1": "The landing page now keeps vendor selection, service status, and test credential setup in one place, with the active session ID visible directly in the status block.",
+    "sessionOverviewCopy2": "The mock local vendor now runs directly from the page with success and failure simulation modes for every step.",
+    "reviewPayloadCardsAria": "Review payload cards"
+  },
+  "history": {
+    "eyebrow": "History",
+    "title": "Session event log",
+    "listAria": "Session event log"
+  },
+  "evidence": {
+    "stepCopy": {
+      "pid": {
+        "eyebrow": "PID step",
+        "title": "PID collection surface",
+        "copy": "This page focuses on collecting personal identity evidence from the personal wallet before downstream steps become available.",
+        "panelTitle": "PID evidence",
+        "laneBadge": "Personal wallet",
+        "emptyCopy": "No PID data collected yet."
+      },
+      "poa": {
+        "eyebrow": "PoA step",
+        "title": "PoA collection surface",
+        "copy": "This page focuses on power-of-attorney evidence and keeps PID availability visible as upstream context.",
+        "panelTitle": "PoA evidence",
+        "laneBadge": "Personal wallet",
+        "emptyCopy": "No PoA data collected yet."
+      },
+      "eucc": {
+        "eyebrow": "EUCC step",
+        "title": "EUCC collection surface",
+        "copy": "This page focuses on organisation evidence from the company wallet and shows the prerequisite identity state alongside it.",
+        "panelTitle": "EUCC evidence",
+        "laneBadge": "Company wallet",
+        "emptyCopy": "No EUCC data collected yet."
+      }
+    },
+    "requestTitle": {
+      "pid": "PID presentation request",
+      "poa": "PoA presentation request",
+      "eucc": "EUCC presentation request"
+    },
+    "requestDescription": {
+      "pid": "Scan this QR code with the wallet to open the iGrant verification request and start transferring PID data back to the verifier.",
+      "poa": "Scan this QR code with the wallet to open the iGrant verification request and start transferring PoA data back to the verifier.",
+      "eucc": "Scan this QR code with the company wallet to open the iGrant verification request and start transferring EUCC data back to the verifier."
+    },
+    "qrAlt": {
+      "pid": "PID presentation request QR code",
+      "poa": "PoA presentation request QR code",
+      "eucc": "EUCC presentation request QR code"
+    },
+    "prerequisiteState": "Prerequisite state",
+    "dependencyMap": "Dependency map",
+    "prerequisiteListAria": "Prerequisite steps",
+    "dataOrigin": "Data origin",
+    "dataOriginCopy": {
+      "mockLocal": "All values shown below come from local repository fixtures and normalized mock adapter responses.",
+      "external": "This vendor is modeled to use external wallet applications, so values appear only when normalized adapter responses are returned."
+    },
+    "mockFixture": "Mock fixture",
+    "requestCardCopy": {
+      "pid": "Scan the QR code with a compatible wallet to present PID through the live iGrant OIDC4VP verifier flow.",
+      "poa": "Scan the QR code with a compatible wallet to present PoA through the live iGrant OIDC4VP verifier flow.",
+      "eucc": "Scan the QR code with a compatible wallet to present EUCC through the live iGrant OIDC4VP verifier flow."
+    },
+    "prerequisiteWaiting": {
+      "pid": "Waiting for identity evidence",
+      "poa": "Waiting for authorization evidence",
+      "eucc": "Waiting for organisation evidence",
+      "requestCreated": "Presentation request created"
+    },
+    "currentStepFailed": "The current step failed in the normalized session state. Retry the action from the step control panel when ready."
+  }
+}

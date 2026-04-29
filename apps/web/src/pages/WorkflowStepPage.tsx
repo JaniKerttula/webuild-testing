@@ -1,6 +1,5 @@
 import {
   getWorkflowStepSnapshots,
-  workflowStatusLabels,
   type EuccRecord,
   type PidRecord,
   type PoaRecord,
@@ -9,7 +8,8 @@ import {
 } from '@we-build/domain';
 
 import { PageHero } from '../components/PageLayout.js';
-import { actionLabels, statusNotes } from '../workflowUi.js';
+import { useI18n } from '../i18n.js';
+import { getActionLabels, getStatusNotes, getWorkflowStatusLabels } from '../workflowUi.js';
 import { WorkflowEvidenceSection } from './workflow/WorkflowEvidenceSection.js';
 import { WorkflowHistorySection } from './workflow/WorkflowHistorySection.js';
 import { WorkflowReviewSection } from './workflow/WorkflowReviewSection.js';
@@ -42,6 +42,10 @@ export function WorkflowStepPage({
   onResetStep,
   onRestartStep,
 }: WorkflowStepPageProps) {
+  const { locale } = useI18n();
+  const actionLabels = getActionLabels(locale);
+  const statusNotes = getStatusNotes(locale);
+  const workflowStatusLabels = getWorkflowStatusLabels(locale);
   const isMockLocalVendor = selectedVendorOption?.id === 'mock-local';
   const allowsExternalActions = selectedVendorOption?.walletInteraction.personal === 'external-wallet-app'
     || selectedVendorOption?.walletInteraction.company === 'external-wallet-app';

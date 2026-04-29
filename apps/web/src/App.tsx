@@ -14,35 +14,13 @@ import {
 } from '@we-build/domain';
 
 import { AppShell, type NavigationItem } from './components/AppShell.js';
+import { I18nProvider, getInitialLocale, getTranslations, localeStorageKey, type AppLocale } from './i18n.js';
 import { LandingPage } from './pages/LandingPage.js';
 import { WorkflowStepPage } from './pages/WorkflowStepPage.js';
-import { actionLabels } from './workflowUi.js';
+import { getActionLabels } from './workflowUi.js';
 import type { HealthState, JourneyNavigationItem, JourneyPageId, SessionState } from './pages/workflow/types.js';
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000';
-
-const workflowStepLabels = {
-  pid: 'Identification',
-  poa: 'Mandate',
-  eucc: 'Company',
-  review: 'Review',
-  vatIssuance: 'Issuance',
-} as const;
-
-const journeyNavigationItems: JourneyNavigationItem[] = [
-  {
-    id: 'landing',
-    label: 'Landing',
-    description: 'Choose the vendor, seed test credentials, and start the paginated workflow.',
-  },
-  ...workflowStepDefinitions.map((step, index) => ({
-    id: step.key,
-    label: workflowStepLabels[step.key],
-    description: step.summary,
-    stepKey: step.key,
-    stepNumber: index + 1,
-  })),
-];
 
 type PollableStepKey = 'pid' | 'poa' | 'eucc' | 'vatIssuance';
 
@@ -90,17 +68,20 @@ function isJourneyPageEnabled(session: OrchestrationSession | null, pageId: Jour
 }
 
 export default function App() {
+  const [locale, setLocale] = useState<AppLocale>(() => getInitialLocale());
+  const t = getTranslations(locale);
+  const actionLabels = getActionLabels(locale);
   const [vendorOptions, setVendorOptions] = useState<VendorDefinition[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<VendorId>('igrant-sandbox');
   const [currentPageId, setCurrentPageId] = useState<JourneyPageId>('landing');
   const [session, setSession] = useState<OrchestrationSession | null>(null);
   const [sessionState, setSessionState] = useState<SessionState>({
     status: 'idle',
-    detail: 'No session loaded yet.',
+    detail: locale === 'fi' ? 'Istuntoa ei ole vielä ladattu.' : 'No session loaded yet.',
   });
   const [health, setHealth] = useState<HealthState>({
     status: 'loading',
-    detail: 'Checking local API health.',
+    detail: locale === 'fi' ? 'Tarkistetaan paikallisen API:n tila.' : 'Checking local API health.',
   });
   const pollingGenerationRef = useRef(0);
   const pollControllerRef = useRef<Record<PollableStepKey, AbortController | null>>({
@@ -109,6 +90,10 @@ export default function App() {
     eucc: null,
     vatIssuance: null,
   });
+
+  useEffect(() => {
+    window.localStorage.setItem(localeStorageKey, locale);
+  }, [locale]);
 
   function invalidatePolling(stepKeys: PollableStepKey[] = pollableStepKeys): number {
     stepKeys.forEach((stepKey) => {
@@ -213,7 +198,7 @@ export default function App() {
   async function refreshSession(vendorId: VendorId): Promise<void> {
     setSessionState({
       status: 'loading',
-      detail: 'Loading session from the local API.',
+      detail: locale === 'fi' ? 'Ladataan istunto paikallisesta API:sta.' : 'Loading session from the local API.',
     });
 
     try {
@@ -221,13 +206,15 @@ export default function App() {
       setSession(nextSession);
       setSessionState({
         status: 'ready',
-        detail: `Loaded session ${nextSession.sessionId}.`,
+        detail: locale === 'fi'
+          ? `Istunto ${nextSession.sessionId} ladattu.`
+          : `Loaded session ${nextSession.sessionId}.`,
       });
     } catch (error) {
       setSession(null);
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown session loading error.',
+        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon virhe istunnon latauksessa.' : 'Unknown session loading error.',
       });
     }
   }
@@ -239,7 +226,7 @@ export default function App() {
     invalidatePolling();
     setSessionState({
       status: 'loading',
-      detail: 'Creating a new session in the local API.',
+      detail: locale === 'fi' ? 'Luodaan uusi istunto paikalliseen API:in.' : 'Creating a new session in the local API.',
     });
 
     try {
@@ -252,12 +239,12 @@ export default function App() {
       setSession(nextSession);
       setSessionState({
         status: 'ready',
-        detail: `Created session ${nextSession.sessionId}.`,
+        detail: locale === 'fi' ? `Istunto ${nextSession.sessionId} luotu.` : `Created session ${nextSession.sessionId}.`,
       });
     } catch (error) {
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown session creation error.',
+        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon virhe istunnon luonnissa.' : 'Unknown session creation error.',
       });
     }
   }
@@ -305,7 +292,7 @@ export default function App() {
     } catch (error) {
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown action execution error.',
+        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon virhe toiminnon suorituksessa.' : 'Unknown action execution error.',
       });
     }
   }
@@ -355,7 +342,7 @@ export default function App() {
     } catch (error) {
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown step reset error.',
+        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon virhe vaiheen nollauksessa.' : 'Unknown step reset error.',
       });
     }
   }
@@ -420,7 +407,7 @@ export default function App() {
     } catch (error) {
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown step restart error.',
+        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon virhe vaiheen uudelleenkäynnistyksessä.' : 'Unknown step restart error.',
       });
     }
   }
@@ -453,7 +440,7 @@ export default function App() {
       if (nextSession.pid.status === 'succeeded') {
         setSessionState({
           status: 'ready',
-          detail: 'PID credential data received from the wallet.',
+          detail: locale === 'fi' ? 'PID-tunnistetiedot vastaanotettu lompakosta.' : 'PID credential data received from the wallet.',
         });
         return;
       }
@@ -461,7 +448,9 @@ export default function App() {
       if (nextSession.pid.status === 'failed') {
         setSessionState({
           status: 'error',
-          detail: nextSession.pid.error?.message ?? 'PID credential verification failed during wallet collection.',
+          detail: nextSession.pid.error?.message ?? (locale === 'fi'
+            ? 'PID-tunnistetietojen varmennus epäonnistui lompakkokeruun aikana.'
+            : 'PID credential verification failed during wallet collection.'),
         });
       }
     } catch (error) {
@@ -475,7 +464,7 @@ export default function App() {
 
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown PID polling error.',
+        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon PID-kyselyvirhe.' : 'Unknown PID polling error.',
       });
     } finally {
       clearPollingRequest('pid', controller);
@@ -510,7 +499,7 @@ export default function App() {
       if (nextSession.poa.status === 'succeeded') {
         setSessionState({
           status: 'ready',
-          detail: 'PoA credential data received from the wallet.',
+          detail: locale === 'fi' ? 'PoA-tunnistetiedot vastaanotettu lompakosta.' : 'PoA credential data received from the wallet.',
         });
         return;
       }
@@ -518,7 +507,9 @@ export default function App() {
       if (nextSession.poa.status === 'failed') {
         setSessionState({
           status: 'error',
-          detail: nextSession.poa.error?.message ?? 'PoA credential verification failed during wallet collection.',
+          detail: nextSession.poa.error?.message ?? (locale === 'fi'
+            ? 'PoA-tunnistetietojen varmennus epäonnistui lompakkokeruun aikana.'
+            : 'PoA credential verification failed during wallet collection.'),
         });
       }
     } catch (error) {
@@ -532,7 +523,7 @@ export default function App() {
 
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown PoA polling error.',
+        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon PoA-kyselyvirhe.' : 'Unknown PoA polling error.',
       });
     } finally {
       clearPollingRequest('poa', controller);
@@ -842,6 +833,22 @@ export default function App() {
   ]);
 
   const selectedVendorOption = vendorOptions.find((vendor) => vendor.id === selectedVendor) ?? vendorOptions[0];
+  const journeyNavigationItems: JourneyNavigationItem[] = [
+    {
+      id: 'landing',
+      label: t.navigation.landing,
+      description: locale === 'fi'
+        ? 'Valitse toimittaja, esitäytä testitunnukset ja käynnistä vaiheittainen työnkulku.'
+        : 'Choose the vendor, seed test credentials, and start the paginated workflow.',
+    },
+    ...workflowStepDefinitions.map((step, index) => ({
+      id: step.key,
+      label: t.navigation.stepLabels[step.key],
+      description: t.navigation.stepDescriptions[step.key],
+      stepKey: step.key,
+      stepNumber: index + 1,
+    })),
+  ];
   const stepPages = journeyNavigationItems
     .filter((item) => item.id !== 'landing')
     .map((item) => ({
@@ -851,7 +858,7 @@ export default function App() {
   const navigationItems: NavigationItem[] = [
     {
       id: 'landing',
-      label: 'Landing',
+      label: t.navigation.landing,
     },
     ...stepPages.map((item) => ({
       id: item.id,
@@ -894,15 +901,11 @@ export default function App() {
         <WorkflowStepPage
           {...workflowPageProps}
           stepKey={page.stepKey!}
-          stepLabel={workflowStepDefinitions[index].title}
-          stepDescription={workflowStepDefinitions[index].summary}
+          stepLabel={locale === 'fi' ? t.navigation.stepLabels[page.stepKey!] : workflowStepDefinitions[index].title}
+          stepDescription={t.navigation.stepDescriptions[page.stepKey!]}
           stepPages={stepPages}
           openedPageIds={stepPages.filter((item) => !item.disabled).map((item) => item.id)}
           onNavigate={setCurrentPageId}
-          previousPageId={(() => {
-            const availablePrevious = stepPages.slice(0, index).filter((item) => !item.disabled);
-            return availablePrevious.length ? availablePrevious[availablePrevious.length - 1]!.id : 'landing';
-          })()}
           nextPageId={stepPages.slice(index + 1).find((item) => !item.disabled)?.id}
         />
       ),
@@ -911,26 +914,23 @@ export default function App() {
   const currentPage = pages.find((page) => page.id === currentPageId) ?? pages[0];
 
   return (
-    <AppShell
-      brandTitle="We Build Testing"
-      navigationItems={navigationItems}
-      currentPageId={currentPage.id}
-      onNavigate={(pageId) => {
-        if (!isWorkflowStepKey(pageId) || isJourneyPageEnabled(session, pageId)) {
-          setCurrentPageId(pageId as JourneyPageId);
-        }
-      }}
-      languageLinks={[
-        { href: '#page-footer', label: 'FI' },
-        { href: '#page-footer', label: 'EN', isCurrent: true },
-      ]}
-      footerLinks={[
-        { href: '#session-overview', label: 'Data protection' },
-        { href: '#journey-overview', label: 'Accessibility statement' },
-        { href: '#status', label: 'Contact information' },
-      ]}
-    >
-      {currentPage.render()}
-    </AppShell>
+    <I18nProvider locale={locale} setLocale={setLocale}>
+      <AppShell
+        brandTitle={t.shell.brandTitle}
+        onBrandClick={() => setCurrentPageId('landing')}
+        languageSwitcherLabel={t.shell.languageSwitcherLabel}
+        languageLinks={[
+          { id: 'fi', label: 'FI', isCurrent: locale === 'fi', onSelect: () => setLocale('fi') },
+          { id: 'en', label: 'EN', isCurrent: locale === 'en', onSelect: () => setLocale('en') },
+        ]}
+        footerLinks={[
+          { href: '#session-overview', label: t.shell.footerLinks.dataProtection },
+          { href: '#journey-overview', label: t.shell.footerLinks.accessibility },
+          { href: '#status', label: t.shell.footerLinks.contactInformation },
+        ]}
+      >
+        {currentPage.render()}
+      </AppShell>
+    </I18nProvider>
   );
 }

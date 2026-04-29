@@ -68,6 +68,28 @@ function createTestAdapter(requestPidImpl: VendorAdapter['requestPid']): VendorA
 }
 
 describe('API hardening', () => {
+  it('allows the 127.0.0.1 web dev origin by default', async () => {
+    const app = createApp();
+
+    const response = await request(app)
+      .get('/health')
+      .set('Origin', 'http://127.0.0.1:5173')
+      .expect(200);
+
+    expect(response.headers['access-control-allow-origin']).toBe('http://127.0.0.1:5173');
+  });
+
+  it('allows loopback dev origins on alternate ports by default', async () => {
+    const app = createApp({ corsOrigin: [] });
+
+    const response = await request(app)
+      .get('/health')
+      .set('Origin', 'http://127.0.0.1:5174')
+      .expect(200);
+
+    expect(response.headers['access-control-allow-origin']).toBe('http://127.0.0.1:5174');
+  });
+
   it('rejects invalid simulation modes before calling the adapter', async () => {
     const app = createApp();
 

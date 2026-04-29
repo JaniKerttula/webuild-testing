@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createInitialSession, updateSessionStep, vendorCatalog, type NormalizedError, type OrchestrationSession, type PidRecord } from '@we-build/domain';
+import { createInitialSession, updateSessionStep, upsertWalletCredential, vendorCatalog, type NormalizedError, type OrchestrationSession, type PidRecord } from '@we-build/domain';
 
 import App from '../src/App.js';
 
@@ -358,6 +358,61 @@ function createPendingVatIssuanceSession(): OrchestrationSession {
   });
 }
 
+function createSeededWalletOfferSession(): OrchestrationSession {
+  let session = createReadySession();
+
+  session = upsertWalletCredential(session, 'personal', {
+    credentialType: 'pid',
+    label: 'iGrant PID credential',
+    holderName: 'Teemu Tester',
+    issuerName: 'iGrant test issuer',
+    seededAt: '2026-04-22T10:01:00.000Z',
+    status: 'offer-created',
+    offer: {
+      protocol: 'oid4vci',
+      offerUri: 'openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Fpid-exchange-1',
+      qrCodeValue: 'openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Fpid-exchange-1',
+      referenceUri: 'https://issuer.example/offers/pid-exchange-1',
+      exchangeId: 'pid-exchange-1',
+      userPin: '1111',
+    },
+  });
+
+  session = upsertWalletCredential(session, 'personal', {
+    credentialType: 'poa',
+    label: 'iGrant PoA attestation',
+    holderName: 'Teemu Tester',
+    issuerName: 'iGrant test issuer',
+    seededAt: '2026-04-22T10:02:00.000Z',
+    status: 'offer-created',
+    offer: {
+      protocol: 'oid4vci',
+      offerUri: 'openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Fpoa-exchange-1',
+      qrCodeValue: 'openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Fpoa-exchange-1',
+      referenceUri: 'https://issuer.example/offers/poa-exchange-1',
+      exchangeId: 'poa-exchange-1',
+      userPin: '2222',
+    },
+  });
+
+  return upsertWalletCredential(session, 'company', {
+    credentialType: 'eucc',
+    label: 'iGrant EUCC attestation',
+    holderName: 'Teemun Tomaatit Oy',
+    issuerName: 'iGrant test issuer',
+    seededAt: '2026-04-22T10:03:00.000Z',
+    status: 'offer-created',
+    offer: {
+      protocol: 'oid4vci',
+      offerUri: 'openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Feucc-exchange-1',
+      qrCodeValue: 'openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Feucc-exchange-1',
+      referenceUri: 'https://issuer.example/offers/eucc-exchange-1',
+      exchangeId: 'eucc-exchange-1',
+      userPin: '3333',
+    },
+  });
+}
+
 async function openJourneyPage(label: string): Promise<void> {
   await waitFor(() => {
     const targetButton = screen.queryByRole('button', { name: label })
@@ -435,6 +490,41 @@ describe('App polling', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Landing' }));
 
     expect(await screen.findByRole('heading', { name: 'Local VAT attestation test journey' })).toBeTruthy();
+  });
+
+  it('renders PoA and EUCC wallet offers on the landing page for external-wallet vendors', async () => {
+    const currentSession = createSeededWalletOfferSession();
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+
+      if (url.endsWith('/health')) {
+        return new Response(JSON.stringify({ status: 'ok', service: 'api' }), { status: 200 });
+      }
+
+      if (url.endsWith('/api/vendors')) {
+        return new Response(JSON.stringify(vendorCatalog), { status: 200 });
+      }
+
+      if (url.includes('/api/sessions/session-igrant')) {
+        return new Response(JSON.stringify(currentSession), { status: 200 });
+      }
+
+      if (url.endsWith('/api/sessions')) {
+        return new Response(JSON.stringify(currentSession), { status: 200 });
+      }
+
+      throw new Error(`Unhandled fetch request: ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Local VAT attestation test journey' })).toBeTruthy();
+    expect(await screen.findByText('iGrant PoA attestation')).toBeTruthy();
+    expect(screen.getByText('iGrant EUCC attestation')).toBeTruthy();
+    expect(screen.getAllByRole('link', { name: 'Open OID4VCI deep-link' })).toHaveLength(3);
   });
 
   it('stops polling after PID data has been received', async () => {

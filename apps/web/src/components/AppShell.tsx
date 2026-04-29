@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+const brandMarkUrl = '/resources/images/we-build-logomark-light-bg.png';
+
 export type NavigationItem = {
   id: string;
   label: string;
@@ -7,9 +9,10 @@ export type NavigationItem = {
 };
 
 type LanguageLink = {
-  href: string;
+  id: string;
   label: string;
   isCurrent?: boolean;
+  onSelect: () => void;
 };
 
 type FooterLink = {
@@ -20,6 +23,7 @@ type FooterLink = {
 type AppShellProps = {
   brandTitle: string;
   onBrandClick: () => void;
+  languageSwitcherLabel: string;
   languageLinks: LanguageLink[];
   footerLinks: FooterLink[];
   children: ReactNode;
@@ -28,6 +32,7 @@ type AppShellProps = {
 export function AppShell({
   brandTitle,
   onBrandClick,
+  languageSwitcherLabel,
   languageLinks,
   footerLinks,
   children,
@@ -38,20 +43,24 @@ export function AppShell({
         <div className="site-header-inner">
           <div className="brand-lockup">
             <button type="button" className="brand-title-button" onClick={onBrandClick}>
-              <h1 className="brand-title">{brandTitle}</h1>
+              <h1 className="brand-title">
+                <img className="brand-title-icon" src={brandMarkUrl} alt="" aria-hidden="true" />
+                <span>{brandTitle}</span>
+              </h1>
             </button>
           </div>
 
-          <div className="header-actions" aria-label="Language switcher">
+          <div className="header-actions" aria-label={languageSwitcherLabel}>
             {languageLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
+              <button
+                key={link.id}
+                type="button"
                 className={`language-link${link.isCurrent ? ' current-language' : ''}`}
                 aria-current={link.isCurrent ? 'page' : undefined}
+                onClick={link.onSelect}
               >
                 {link.label}
-              </a>
+              </button>
             ))}
           </div>
         </div>
