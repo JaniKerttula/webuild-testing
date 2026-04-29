@@ -136,7 +136,7 @@ export function WorkflowStepPage({
       : stepDescription;
   const heroSecondaryIntro = stepKey === 'pid' || stepKey === 'poa' || stepKey === 'eucc'
     ? undefined
-    : 'Each workflow page now isolates one stage of the journey while still reading the same root session state and vendor configuration.';
+    : 'This simulates the review phase, where we use the collected data to match to the known VAT attestations that can be issued. Note that currently only the test data matches to an attestation.';
   const breadcrumbItems = stepPages.map((page) => ({
     id: page.id,
     label: page.label,
@@ -227,6 +227,8 @@ export function WorkflowStepPage({
                 session={session}
                 canTriggerVendorActions={canTriggerVendorActions}
                 onTriggerAction={onTriggerAction}
+                nextPageId={nextPageId}
+                onNavigateToNextStep={onNavigate}
                 mode={stepKey === 'vatIssuance' ? 'issuance' : 'review'}
               />
             ) : null}
@@ -253,12 +255,12 @@ export function WorkflowStepPage({
                 </button>
               ) : (
                 <>
-                  {stepKey === 'review' ? (
+                  {stepKey === 'vatIssuance' ? (
                     <button
                       type="button"
                       className="action-button"
                       onClick={() => onTriggerAction('vatIssuance')}
-                      disabled={!canTriggerVendorActions || session?.review.status !== 'succeeded'}
+                      disabled={!canTriggerVendorActions || session?.review.status !== 'succeeded' || currentStep?.status === 'pending'}
                     >
                       Submit VAT issuance
                     </button>

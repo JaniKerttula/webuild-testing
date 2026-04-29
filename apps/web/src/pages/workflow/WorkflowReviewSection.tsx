@@ -1,15 +1,16 @@
 import { useEffect, useRef } from 'react';
 
-import { workflowStatusLabels, type OrchestrationSession } from '@we-build/domain';
+import type { OrchestrationSession } from '@we-build/domain';
 
-import { statusNotes } from '../../workflowUi.js';
 import { formatTimestamp } from './WorkflowShared.js';
-import type { WorkflowPageProps } from './types.js';
+import type { JourneyPageId, WorkflowPageProps } from './types.js';
 
 type WorkflowReviewSectionProps = {
   session: OrchestrationSession | null;
   canTriggerVendorActions: boolean;
   onTriggerAction: WorkflowPageProps['onTriggerAction'];
+  nextPageId?: JourneyPageId;
+  onNavigateToNextStep?: (pageId: JourneyPageId) => void;
   mode?: 'review' | 'issuance';
 };
 
@@ -17,10 +18,11 @@ export function WorkflowReviewSection({
   session,
   canTriggerVendorActions,
   onTriggerAction,
+  nextPageId,
+  onNavigateToNextStep,
   mode = 'review',
 }: WorkflowReviewSectionProps) {
   const reviewPayload = session?.review.data;
-  const issuanceResult = session?.vatIssuance.data;
   const isIssuanceMode = mode === 'issuance';
   const lastAutoAssembleKeyRef = useRef<string | null>(null);
 
@@ -44,21 +46,10 @@ export function WorkflowReviewSection({
   }, [canTriggerVendorActions, isIssuanceMode, onTriggerAction, reviewPayload, session]);
 
   return (
-    <div className="card-grid" aria-label={isIssuanceMode ? 'Issuance cards' : 'Review cards'}>
-      <article className="step-card" data-state={session?.review.status ?? 'not-started'}>
-        <div className="step-card-top">
-          <h4>{isIssuanceMode ? 'Review source' : 'Review payload'}</h4>
-          <span className="step-state">{workflowStatusLabels[session?.review.status ?? 'not-started']}</span>
-        </div>
-        <p className="step-summary">
-          {isIssuanceMode
-            ? 'The review payload below is the source material used for the VAT issuance request.'
-            : 'Assemble PID, company, PoA, and EUCC into one review object.'}
-        </p>
-        <p className="step-note">{statusNotes[session?.review.status ?? 'not-started']}</p>
-
-        {reviewPayload ? (
-          <div className="review-sections">
+    reviewPayload ? (
+      <>
+        <div className="review-layout">
+          <div className="review-column">
             <div className="review-block">
               <h4>Person</h4>
               <dl className="review-list">
@@ -94,8 +85,10 @@ export function WorkflowReviewSection({
                 <div><dt>Representatives</dt><dd>{reviewPayload.eucc.representativeNames.join(', ')}</dd></div>
               </dl>
             </div>
+          </div>
 
-            <div className="review-block">
+          <div className="review-column">
+            <div className="review-block review-highlight-block">
               <h4>Matched VAT attestation</h4>
               <dl className="review-list">
                 <div><dt>VAT ID</dt><dd>{reviewPayload.vatAttestation.vatId}</dd></div>
@@ -106,49 +99,28 @@ export function WorkflowReviewSection({
               </dl>
               <p className="supporting-copy">Matched from the verified EUCC company before issuance.</p>
             </div>
-
-            <p className="supporting-copy">Assembled at {formatTimestamp(reviewPayload.assembledAt)}.</p>
           </div>
-        ) : (
-          <p className="supporting-copy">
-            The review payload appears automatically after PID, PoA, and EUCC succeed. This card becomes the explicit submission surface for VAT issuance.
-          </p>
-        )}
-
-        <div className="step-meta">
-          <span>{isIssuanceMode ? 'Issuance preparation step' : 'Operator step'}</span>
         </div>
-      </article>
 
-      <article className="step-card" data-state={session?.vatIssuance.status ?? 'not-started'}>
-        <div className="step-card-top">
-          <h4>{isIssuanceMode ? 'VAT issuance result' : 'Issuance result'}</h4>
-          <span className="step-state">{workflowStatusLabels[session?.vatIssuance.status ?? 'not-started']}</span>
-        </div>
-        <p className="step-summary">
-          VAT issuance output appears here after submission. Pending vendor modes can remain in progress until a later status refresh.
-        </p>
-        <p className="step-note">{statusNotes[session?.vatIssuance.status ?? 'not-started']}</p>
+        <p className="supporting-copy">Assembled at {formatTimestamp(reviewPayload.assembledAt)}.</p>
 
-        {issuanceResult ? (
-          <dl className="review-list">
-            <div><dt>VAT ID</dt><dd>{issuanceResult.vatId}</dd></div>
-            <div><dt>Organisation</dt><dd>{issuanceResult.issuingOrganisation}</dd></div>
-            <div><dt>Country</dt><dd>{issuanceResult.issuingCountry}</dd></div>
-            <div><dt>Administrative unit</dt><dd>{issuanceResult.administrativeUnitName}</dd></div>
-            <div><dt>Status</dt><dd>{issuanceResult.status}</dd></div>
-            <div><dt>Issued at</dt><dd>{formatTimestamp(issuanceResult.issuedAt)}</dd></div>
-            <div><dt>Exchange ID</dt><dd>{issuanceResult.exchangeId ?? 'Not assigned yet'}</dd></div>
-          </dl>
-        ) : (
-          <p className="supporting-copy">
-            VAT issuance output appears here after the explicit submit action. Pending vendor modes can stay in progress until a later status refresh.
-          </p>
-        )}
-        <div className="step-meta">
-          <span>{isIssuanceMode ? 'Company step' : 'Submission result'}</span>
-        </div>
-      </article>
-    </div>
+        {!isIssuanceMode ? (
+          <div className="step-actions">
+            <button
+              type="button"
+              className="action-button"
+              onClick={() => nextPageId && onNavigateToNextStep?.(nextPageId)}
+              disabled={!nextPageId || !onNavigateToNextStep}
+            >
+              Continue to next step
+            </button>
+          </div>
+        ) : null}
+      </>
+    ) : (
+      <p className="supporting-copy">
+        The review payload appears automatically after PID, PoA, and EUCC succeed.
+      </p>
+    )
   );
 }

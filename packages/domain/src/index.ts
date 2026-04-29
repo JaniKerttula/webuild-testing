@@ -356,7 +356,7 @@ export const workflowStepDefinitions: WorkflowStepDefinition[] = [
   {
     key: 'review',
     title: 'Review payload',
-    summary: 'Assemble PID, company, PoA, and EUCC into one review object.',
+    summary: 'Assemble PID, PoA and EUCC into a review object and match with VAT attestations.',
     walletRole: 'operator',
     dependsOn: ['poa', 'eucc'],
   },

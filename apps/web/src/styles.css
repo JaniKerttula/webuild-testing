@@ -868,15 +868,27 @@ a {
   overflow-wrap: anywhere;
 }
 
-.review-sections {
+.review-sections,
+.review-column {
   display: grid;
   gap: 14px;
+}
+
+.review-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  gap: 16px;
+  align-items: start;
 }
 
 .review-block {
   padding: 12px;
   border: 1px solid var(--page-border);
   background: var(--surface-soft);
+}
+
+.review-highlight-block {
+  background: #f9fbfe;
 }
 
 .review-block h4 {
@@ -1005,6 +1017,7 @@ a {
   }
 
   .review-list div,
+  .review-layout,
   .history-meta,
   .evidence-card-top,
   .wallet-credential-header {
