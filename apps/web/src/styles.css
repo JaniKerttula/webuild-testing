@@ -48,6 +48,26 @@ body {
   color: var(--muted-text);
 }
 
+.workflow-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.workflow-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.workflow-breadcrumb.current-workflow-breadcrumb {
+  color: var(--accent);
+}
+
+.workflow-breadcrumb-separator {
+  color: var(--page-border-strong);
+}
+
 h1,
 h2,
 h3,
@@ -838,6 +858,17 @@ a {
   gap: 8px;
 }
 
+.step-panel-content {
+  display: grid;
+  gap: 12px;
+}
+
+.workflow-step-request-panel {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
 .wallet-list {
   list-style: none;
   margin: 0;
@@ -883,6 +914,21 @@ a {
 .qr-code-panel {
   display: grid;
   gap: 8px;
+}
+
+.qr-code-value-disclosure {
+  width: min(220px, 100%);
+}
+
+.qr-code-value-disclosure summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.qr-code-value-disclosure[open] summary {
+  margin-bottom: 8px;
 }
 
 .qr-code-image,

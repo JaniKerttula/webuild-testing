@@ -2188,6 +2188,46 @@ export function createIgrantSandboxAdapter(): VendorAdapter {
         message: `Started in-time iGrant VAT issuance for exchange ${exchangeId}.`,
       };
     },
+    async cleanupStepHistory(session: OrchestrationSession, stepKey) {
+      const config = await readConfig();
+
+      if (isConfigError(config)) {
+        return config;
+      }
+
+      const verificationExchangeId =
+        stepKey === 'pid'
+          ? session.pid.data?.request?.exchangeId
+          : stepKey === 'poa'
+            ? session.poa.data?.request?.exchangeId
+            : stepKey === 'eucc'
+              ? session.eucc.data?.request?.exchangeId
+              : undefined;
+      const issuanceExchangeId = stepKey === 'vatIssuance' ? session.vatIssuance.data?.exchangeId : undefined;
+
+      if (!verificationExchangeId && !issuanceExchangeId) {
+        return {
+          status: 'succeeded',
+          message: `No pending ${stepKey} exchange was present to clean up.`,
+        };
+      }
+
+      const path = verificationExchangeId
+        ? `/v2/config/digital-wallet/openid/sdjwt/verification/history/${verificationExchangeId}`
+        : `/v2/config/digital-wallet/openid/sdjwt/credential/history/${issuanceExchangeId}`;
+      const response = await requestIgrant<Record<string, unknown>>(config, path, { method: 'DELETE' });
+
+      if (isAdapterFailure(response)) {
+        return response;
+      }
+
+      const exchangeId = verificationExchangeId ?? issuanceExchangeId;
+
+      return {
+        status: 'succeeded',
+        message: `Deleted iGrant ${stepKey} history for exchange ${exchangeId}.`,
+      };
+    },
     async readIssuanceStatus(session: OrchestrationSession, _options?: AdapterRequestOptions) {
       const config = await readConfig();
 

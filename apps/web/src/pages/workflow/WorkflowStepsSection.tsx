@@ -42,14 +42,16 @@ export function WorkflowStepsSection({
               >
                 {actionLabels[step.key]}
               </button>
-              <button
-                type="button"
-                className="action-button action-button-secondary"
-                onClick={() => onTriggerAction(step.key, 'failure')}
-                disabled={!session || !isMockLocalVendor}
-              >
-                Fail
-              </button>
+              {isMockLocalVendor ? (
+                <button
+                  type="button"
+                  className="action-button action-button-secondary"
+                  onClick={() => onTriggerAction(step.key, 'failure')}
+                  disabled={!session}
+                >
+                  Fail
+                </button>
+              ) : null}
               {step.key === 'vatIssuance' ? (
                 <button
                   type="button"

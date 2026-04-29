@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 type PageHeroProps = {
-  eyebrow: string;
+  eyebrow: ReactNode;
   title: string;
   intro: string;
   secondaryIntro?: string;

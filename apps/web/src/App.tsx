@@ -9,6 +9,8 @@ import {
   type VendorId,
   type VendorDefinition,
   type WalletCredentialType,
+  type WorkflowStepKey,
+  type WorkflowStepStatus,
 } from '@we-build/domain';
 
 import { AppShell, type NavigationItem } from './components/AppShell.js';
@@ -19,6 +21,14 @@ import type { HealthState, JourneyNavigationItem, JourneyPageId, SessionState } 
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000';
 
+const workflowStepLabels = {
+  pid: 'Identification',
+  poa: 'Mandate',
+  eucc: 'Company',
+  review: 'Review',
+  vatIssuance: 'Issuance',
+} as const;
+
 const journeyNavigationItems: JourneyNavigationItem[] = [
   {
     id: 'landing',
@@ -27,12 +37,40 @@ const journeyNavigationItems: JourneyNavigationItem[] = [
   },
   ...workflowStepDefinitions.map((step, index) => ({
     id: step.key,
-    label: step.key === 'vatIssuance' ? 'Issuance' : step.title.replace(/ collection| payload| identification/, ''),
+    label: workflowStepLabels[step.key],
     description: step.summary,
     stepKey: step.key,
     stepNumber: index + 1,
   })),
 ];
+
+type PollableStepKey = 'pid' | 'poa' | 'eucc' | 'vatIssuance';
+
+const pollableStepKeys: PollableStepKey[] = ['pid', 'poa', 'eucc', 'vatIssuance'];
+
+function isPollableStepKey(stepKey: WorkflowStepKey | SessionActionKey): stepKey is PollableStepKey {
+  return stepKey === 'pid' || stepKey === 'poa' || stepKey === 'eucc' || stepKey === 'vatIssuance';
+}
+
+function hasPendingRemoteHistory(session: OrchestrationSession, stepKey: PollableStepKey): boolean {
+  if (stepKey === 'vatIssuance') {
+    return session.vatIssuance.status === 'pending' && Boolean(session.vatIssuance.data?.exchangeId);
+  }
+
+  return session[stepKey].status === 'pending' && Boolean(session[stepKey].data?.request?.exchangeId);
+}
+
+function getPendingRemoteHistorySteps(session: OrchestrationSession | null): PollableStepKey[] {
+  if (!session) {
+    return [];
+  }
+
+  return pollableStepKeys.filter((stepKey) => hasPendingRemoteHistory(session, stepKey));
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
+}
 
 function getSessionStorageKey(vendorId: VendorId): string {
   return `we-build-testing:session:${vendorId}`;
@@ -65,10 +103,55 @@ export default function App() {
     detail: 'Checking local API health.',
   });
   const pollingGenerationRef = useRef(0);
+  const pollControllerRef = useRef<Record<PollableStepKey, AbortController | null>>({
+    pid: null,
+    poa: null,
+    eucc: null,
+    vatIssuance: null,
+  });
 
-  function invalidatePolling(): number {
+  function invalidatePolling(stepKeys: PollableStepKey[] = pollableStepKeys): number {
+    stepKeys.forEach((stepKey) => {
+      pollControllerRef.current[stepKey]?.abort();
+      pollControllerRef.current[stepKey] = null;
+    });
+
     pollingGenerationRef.current += 1;
     return pollingGenerationRef.current;
+  }
+
+  function beginPollingRequest(stepKey: PollableStepKey): AbortController {
+    pollControllerRef.current[stepKey]?.abort();
+    const controller = new AbortController();
+    pollControllerRef.current[stepKey] = controller;
+    return controller;
+  }
+
+  function clearPollingRequest(stepKey: PollableStepKey, controller: AbortController): void {
+    if (pollControllerRef.current[stepKey] === controller) {
+      pollControllerRef.current[stepKey] = null;
+    }
+  }
+
+  async function deleteStepHistory(sessionId: string, stepKey: PollableStepKey): Promise<void> {
+    const response = await fetch(`${apiBaseUrl}/api/sessions/${sessionId}/steps/${stepKey}/history`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      throw new Error(payload?.error ?? `Step history cleanup failed with ${response.status}`);
+    }
+  }
+
+  async function cleanupPendingRemoteHistory(sessionSnapshot: OrchestrationSession, stepKeys: PollableStepKey[]): Promise<void> {
+    for (const stepKey of stepKeys) {
+      if (!hasPendingRemoteHistory(sessionSnapshot, stepKey)) {
+        continue;
+      }
+
+      await deleteStepHistory(sessionSnapshot.sessionId, stepKey);
+    }
   }
 
   async function loadVendors(): Promise<void> {
@@ -150,14 +233,21 @@ export default function App() {
   }
 
   async function startNewSession(): Promise<void> {
+    const sessionSnapshot = session;
+    const pendingHistorySteps = getPendingRemoteHistorySteps(sessionSnapshot);
+
     invalidatePolling();
-    setSession(null);
     setSessionState({
       status: 'loading',
       detail: 'Creating a new session in the local API.',
     });
 
     try {
+      if (sessionSnapshot) {
+        await cleanupPendingRemoteHistory(sessionSnapshot, pendingHistorySteps);
+      }
+
+      setSession(null);
       const nextSession = await createSession(selectedVendor);
       setSession(nextSession);
       setSessionState({
@@ -177,12 +267,22 @@ export default function App() {
       return;
     }
 
+    const isRetryingEvidenceRequest = isPollableStepKey(actionKey) && hasPendingRemoteHistory(session, actionKey);
+
+    if (isRetryingEvidenceRequest) {
+      invalidatePolling([actionKey]);
+    }
+
     setSessionState({
       status: 'loading',
-      detail: `Running ${actionLabels[actionKey]} in ${simulationMode} mode.`,
+      detail: `${isRetryingEvidenceRequest ? `Retrying ${actionLabels[actionKey]}` : `Running ${actionLabels[actionKey]}`} in ${simulationMode} mode.`,
     });
 
     try {
+      if (isRetryingEvidenceRequest && isPollableStepKey(actionKey)) {
+        await cleanupPendingRemoteHistory(session, [actionKey]);
+      }
+
       const response = await fetch(`${apiBaseUrl}/api/sessions/${session.sessionId}/actions/${actionKey}`, {
         method: 'POST',
         headers: {
@@ -210,7 +310,115 @@ export default function App() {
     }
   }
 
+  async function resetStep(stepKey: WorkflowStepKey, status: WorkflowStepStatus, message: string): Promise<void> {
+    if (!session) {
+      return;
+    }
+
+    const shouldCleanupRemoteHistory = isPollableStepKey(stepKey) && hasPendingRemoteHistory(session, stepKey);
+
+    if (shouldCleanupRemoteHistory && isPollableStepKey(stepKey)) {
+      invalidatePolling([stepKey]);
+    }
+
+    setSessionState({
+      status: 'loading',
+      detail: message,
+    });
+
+    try {
+      if (shouldCleanupRemoteHistory && isPollableStepKey(stepKey)) {
+        await cleanupPendingRemoteHistory(session, [stepKey]);
+      }
+
+      const response = await fetch(`${apiBaseUrl}/api/sessions/${session.sessionId}/steps/${stepKey}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status,
+          message,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Step reset failed with ${response.status}`);
+      }
+
+      const nextSession = (await response.json()) as OrchestrationSession;
+      setSession(nextSession);
+      setSessionState({
+        status: 'ready',
+        detail: message,
+      });
+    } catch (error) {
+      setSessionState({
+        status: 'error',
+        detail: error instanceof Error ? error.message : 'Unknown step reset error.',
+      });
+    }
+  }
+
+  async function restartEvidenceStep(stepKey: WorkflowStepKey): Promise<void> {
+    if (!session || (stepKey !== 'pid' && stepKey !== 'poa' && stepKey !== 'eucc')) {
+      return;
+    }
+
+    invalidatePolling();
+    setSessionState({
+      status: 'loading',
+      detail: `Re-requesting ${actionLabels[stepKey]}.`,
+    });
+
+    try {
+      const resetResponse = await fetch(`${apiBaseUrl}/api/sessions/${session.sessionId}/steps/${stepKey}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'ready',
+          message: `${actionLabels[stepKey]} reset before re-request.`,
+        }),
+      });
+
+      if (!resetResponse.ok) {
+        throw new Error(`Step reset failed with ${resetResponse.status}`);
+      }
+
+      const resetSession = (await resetResponse.json()) as OrchestrationSession;
+      setSession(resetSession);
+
+      const actionResponse = await fetch(`${apiBaseUrl}/api/sessions/${session.sessionId}/actions/${stepKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ simulationMode: 'success' }),
+      });
+
+      if (!actionResponse.ok) {
+        throw new Error(`Action execution failed with ${actionResponse.status}`);
+      }
+
+      const nextSession = (await actionResponse.json()) as OrchestrationSession;
+      setSession(nextSession);
+      setSessionState({
+        status: 'ready',
+        detail: `${actionLabels[stepKey]} completed with ${nextSession[stepKey].status} state.`,
+      });
+    } catch (error) {
+      setSessionState({
+        status: 'error',
+        detail: error instanceof Error ? error.message : 'Unknown step restart error.',
+      });
+    }
+  }
+
   async function pollPendingPid(sessionId: string, pollingGeneration: number): Promise<void> {
+    const controller = beginPollingRequest('pid');
+
     try {
       const response = await fetch(`${apiBaseUrl}/api/sessions/${sessionId}/actions/pid`, {
         method: 'POST',
@@ -218,6 +426,7 @@ export default function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({}),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -247,6 +456,10 @@ export default function App() {
         });
       }
     } catch (error) {
+      if (isAbortError(error)) {
+        return;
+      }
+
       if (pollingGeneration !== pollingGenerationRef.current) {
         return;
       }
@@ -255,10 +468,14 @@ export default function App() {
         status: 'error',
         detail: error instanceof Error ? error.message : 'Unknown PID polling error.',
       });
+    } finally {
+      clearPollingRequest('pid', controller);
     }
   }
 
   async function pollPendingPoa(sessionId: string, pollingGeneration: number): Promise<void> {
+    const controller = beginPollingRequest('poa');
+
     try {
       const response = await fetch(`${apiBaseUrl}/api/sessions/${sessionId}/actions/poa`, {
         method: 'POST',
@@ -266,6 +483,7 @@ export default function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({}),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -295,6 +513,10 @@ export default function App() {
         });
       }
     } catch (error) {
+      if (isAbortError(error)) {
+        return;
+      }
+
       if (pollingGeneration !== pollingGenerationRef.current) {
         return;
       }
@@ -303,10 +525,14 @@ export default function App() {
         status: 'error',
         detail: error instanceof Error ? error.message : 'Unknown PoA polling error.',
       });
+    } finally {
+      clearPollingRequest('poa', controller);
     }
   }
 
   async function pollPendingEucc(sessionId: string, pollingGeneration: number): Promise<void> {
+    const controller = beginPollingRequest('eucc');
+
     try {
       const response = await fetch(`${apiBaseUrl}/api/sessions/${sessionId}/actions/eucc`, {
         method: 'POST',
@@ -314,6 +540,7 @@ export default function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({}),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -343,6 +570,10 @@ export default function App() {
         });
       }
     } catch (error) {
+      if (isAbortError(error)) {
+        return;
+      }
+
       if (pollingGeneration !== pollingGenerationRef.current) {
         return;
       }
@@ -351,10 +582,14 @@ export default function App() {
         status: 'error',
         detail: error instanceof Error ? error.message : 'Unknown EUCC polling error.',
       });
+    } finally {
+      clearPollingRequest('eucc', controller);
     }
   }
 
   async function pollPendingVatIssuance(sessionId: string, pollingGeneration: number): Promise<void> {
+    const controller = beginPollingRequest('vatIssuance');
+
     try {
       const response = await fetch(`${apiBaseUrl}/api/sessions/${sessionId}/actions/issuanceStatus`, {
         method: 'POST',
@@ -362,6 +597,7 @@ export default function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({}),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -391,6 +627,10 @@ export default function App() {
         });
       }
     } catch (error) {
+      if (isAbortError(error)) {
+        return;
+      }
+
       if (pollingGeneration !== pollingGenerationRef.current) {
         return;
       }
@@ -399,6 +639,8 @@ export default function App() {
         status: 'error',
         detail: error instanceof Error ? error.message : 'Unknown VAT issuance polling error.',
       });
+    } finally {
+      clearPollingRequest('vatIssuance', controller);
     }
   }
 
@@ -494,6 +736,7 @@ export default function App() {
     }
 
     const exchangeId = session.pid.data?.request?.exchangeId;
+    const pidUpdatedAt = session.pid.updatedAt;
 
     if (session.pid.status !== 'pending' || !exchangeId) {
       return;
@@ -508,7 +751,7 @@ export default function App() {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [selectedVendor, session?.sessionId, session?.pid.status, session?.pid.data?.request?.exchangeId]);
+  }, [selectedVendor, session?.sessionId, session?.pid.status, session?.pid.data?.request?.exchangeId, session?.pid.updatedAt]);
 
   useEffect(() => {
     if (selectedVendor !== 'igrant-sandbox' || !session?.sessionId) {
@@ -516,6 +759,7 @@ export default function App() {
     }
 
     const exchangeId = session.poa.data?.request?.exchangeId;
+    const poaUpdatedAt = session.poa.updatedAt;
 
     if (session.poa.status !== 'pending' || !exchangeId) {
       return;
@@ -530,7 +774,7 @@ export default function App() {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [selectedVendor, session?.sessionId, session?.poa.status, session?.poa.data?.request?.exchangeId]);
+  }, [selectedVendor, session?.sessionId, session?.poa.status, session?.poa.data?.request?.exchangeId, session?.poa.updatedAt]);
 
   useEffect(() => {
     if (selectedVendor !== 'igrant-sandbox' || !session?.sessionId) {
@@ -538,6 +782,7 @@ export default function App() {
     }
 
     const exchangeId = session.eucc.data?.request?.exchangeId;
+    const euccUpdatedAt = session.eucc.updatedAt;
 
     if (session.eucc.status !== 'pending' || !exchangeId) {
       return;
@@ -552,7 +797,7 @@ export default function App() {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [selectedVendor, session?.sessionId, session?.eucc.status, session?.eucc.data?.request?.exchangeId]);
+  }, [selectedVendor, session?.sessionId, session?.eucc.status, session?.eucc.data?.request?.exchangeId, session?.eucc.updatedAt]);
 
   useEffect(() => {
     if (selectedVendor !== 'igrant-sandbox' || !session?.sessionId) {
@@ -618,6 +863,8 @@ export default function App() {
     onRefreshSession: () => void refreshSession(selectedVendor),
     onStartNewSession: () => void startNewSession(),
     onTriggerAction: (actionKey: SessionActionKey, simulationMode?: AdapterSimulationMode) => void triggerAction(actionKey, simulationMode),
+    onResetStep: (stepKey: WorkflowStepKey, status: WorkflowStepStatus, message: string) => void resetStep(stepKey, status, message),
+    onRestartStep: (stepKey: WorkflowStepKey) => void restartEvidenceStep(stepKey),
     onSeedWalletCredential: (walletRole: SeedableWalletRole, credentialType: WalletCredentialType) => void seedWalletCredential(walletRole, credentialType),
   };
   const pages = [

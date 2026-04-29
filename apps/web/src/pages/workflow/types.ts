@@ -3,6 +3,7 @@ import type {
   OrchestrationSession,
   SeedableWalletRole,
   SessionActionKey,
+  WorkflowStepStatus,
   WorkflowStepKey,
   VendorDefinition,
   VendorId,
@@ -42,5 +43,7 @@ export type WorkflowPageProps = {
   onRefreshSession: () => void;
   onStartNewSession: () => void;
   onTriggerAction: (actionKey: SessionActionKey, simulationMode?: AdapterSimulationMode) => void;
+  onResetStep: (stepKey: WorkflowStepKey, status: WorkflowStepStatus, message: string) => void;
+  onRestartStep: (stepKey: WorkflowStepKey) => void;
   onSeedWalletCredential: (walletRole: SeedableWalletRole, credentialType: WalletCredentialType) => void;
 };

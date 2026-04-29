@@ -42,7 +42,10 @@ export function QrCodePanel({ value, alt }: QrCodePanelProps) {
       ) : (
         <div className="qr-code-placeholder">Generating QR code...</div>
       )}
-      <p className="qr-code-value">{value}</p>
+      <details className="qr-code-value-disclosure">
+        <summary>Show raw QR input</summary>
+        <p className="qr-code-value">{value}</p>
+      </details>
     </div>
   );
 }

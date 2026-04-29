@@ -478,5 +478,11 @@ export function createMockLocalAdapter(): VendorAdapter {
         message: 'Mock VAT issuance completed successfully.',
       };
     },
+    async cleanupStepHistory(_session: OrchestrationSession, stepKey) {
+      return {
+        status: 'succeeded',
+        message: `No external ${stepKey} history cleanup required for the mock adapter.`,
+      };
+    },
   };
 }

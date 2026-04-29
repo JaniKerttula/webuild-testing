@@ -14,6 +14,7 @@ import type {
   VendorDefinition,
   WalletCredentialSummary,
   WalletCredentialType,
+  WorkflowStepKey,
 } from '@we-build/domain';
 
 export type AdapterOperationResult<T> = {
@@ -42,4 +43,5 @@ export interface VendorAdapter {
   assembleReview(session: OrchestrationSession, options?: AdapterRequestOptions): Promise<AdapterOperationResult<ReviewPayload>>;
   submitVatIssuance(session: OrchestrationSession, options?: AdapterRequestOptions): Promise<AdapterOperationResult<VatIssuanceResult>>;
   readIssuanceStatus(session: OrchestrationSession, options?: AdapterRequestOptions): Promise<AdapterOperationResult<VatIssuanceResult>>;
+  cleanupStepHistory(session: OrchestrationSession, stepKey: WorkflowStepKey): Promise<AdapterOperationResult<undefined>>;
 }

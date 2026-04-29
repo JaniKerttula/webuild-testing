@@ -14,6 +14,17 @@ type WorkflowQrPanelProps = {
   secondaryAction?: { href: string; label: string };
 };
 
+type WorkflowQrEvidenceCardProps = {
+  copy: string;
+  qrValue: string;
+  qrAlt: string;
+  exchangeId: string;
+  requestUri: string;
+  presentationDefinitionId: string;
+  deepLink: string;
+  className?: string;
+};
+
 export function formatTimestamp(value?: string): string {
   if (!value) {
     return 'Not available';
@@ -72,6 +83,41 @@ export function WorkflowQrPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+export function WorkflowQrEvidenceCard({
+  copy,
+  qrValue,
+  qrAlt,
+  exchangeId,
+  requestUri,
+  presentationDefinitionId,
+  deepLink,
+  className,
+}: WorkflowQrEvidenceCardProps) {
+  return (
+    <div className={className ? `wallet-offer-panel ${className}` : 'wallet-offer-panel'}>
+      <p className="supporting-copy wallet-offer-copy">{copy}</p>
+      <div className="pid-offer-grid">
+        <QrCodePanel value={qrValue} alt={qrAlt} />
+        <div className="pid-offer-details">
+          <dl className="review-list compact-review-list wallet-offer-meta">
+            <div><dt>Exchange ID</dt><dd>{exchangeId}</dd></div>
+            <div><dt>Request URI</dt><dd>{requestUri}</dd></div>
+            <div><dt>Presentation definition</dt><dd>{presentationDefinitionId}</dd></div>
+          </dl>
+          <div className="wallet-offer-actions">
+            <a className="primary-action-link" href={deepLink}>
+              Open OIDC4VP request
+            </a>
+            <a className="secondary-action-link" href={requestUri} target="_blank" rel="noreferrer">
+              Open request URI
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

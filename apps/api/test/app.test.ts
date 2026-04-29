@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { NormalizedError, OrchestrationSession, PidRecord, PidStepData, VendorDefinition, WalletCredentialSummary } from '@we-build/domain';
+import type { NormalizedError, OrchestrationSession, PidRecord, PidStepData, VendorDefinition, WalletCredentialSummary, WorkflowStepKey } from '@we-build/domain';
 
 import { createApp } from '../src/app.js';
 import { createIgrantSandboxAdapter } from '../src/vendors/sandboxAdapter.js';
@@ -60,6 +60,10 @@ function createTestAdapter(requestPidImpl: VendorAdapter['requestPid']): VendorA
     assembleReview: (_session: OrchestrationSession) => notImplemented('Review not used in this test.'),
     submitVatIssuance: (_session: OrchestrationSession) => notImplemented('VAT issuance not used in this test.'),
     readIssuanceStatus: (_session: OrchestrationSession) => notImplemented('Issuance status not used in this test.'),
+    cleanupStepHistory: (_session: OrchestrationSession, _stepKey: WorkflowStepKey) => Promise.resolve({
+      status: 'succeeded',
+      message: 'Cleanup not used in this test.',
+    }),
   };
 }
 
@@ -251,6 +255,10 @@ describe('API hardening', () => {
         message: 'Started VAT issuance for wallet pickup.',
       }),
       readIssuanceStatus: (_session) => notImplemented('Issuance status not used in this test.'),
+      cleanupStepHistory: (_session, _stepKey) => Promise.resolve({
+        status: 'succeeded',
+        message: 'Cleanup not used in this test.',
+      }),
     };
 
     const app = createApp({
@@ -273,6 +281,35 @@ describe('API hardening', () => {
     expect(response.body.wallets.company.loadedCredentials).toHaveLength(1);
     expect(response.body.wallets.company.loadedCredentials[0].credentialType).toBe('vat');
     expect(response.body.wallets.company.loadedCredentials[0].offer.offerUri).toContain('vat-offer');
+  });
+
+  it('deletes step history through the adapter cleanup endpoint', async () => {
+    const cleanupStepHistory = vi.fn(async () => ({
+      status: 'succeeded' as const,
+      message: 'Deleted remote history.',
+    }));
+
+    const adapter: VendorAdapter = {
+      ...createTestAdapter(async () => notImplemented('PID not used in this test.')),
+      cleanupStepHistory,
+    };
+
+    const app = createApp({
+      hasAdapter: (vendorId) => vendorId === 'mock-local',
+      getAdapter: () => adapter,
+      listAdapters: () => [adapter],
+    });
+
+    const created = await request(app)
+      .post('/api/sessions')
+      .send({ vendorId: 'mock-local' })
+      .expect(201);
+
+    await request(app)
+      .delete(`/api/sessions/${created.body.sessionId}/steps/pid/history`)
+      .expect(204);
+
+    expect(cleanupStepHistory).toHaveBeenCalledWith(expect.objectContaining({ sessionId: created.body.sessionId }), 'pid');
   });
 
   it('creates a pending PID OIDC4VP request from the action endpoint', async () => {

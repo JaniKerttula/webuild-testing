@@ -1,7 +1,7 @@
 import { workflowStatusLabels, type OrchestrationSession } from '@we-build/domain';
 
 import { PageSection } from '../../components/PageLayout.js';
-import { WorkflowQrPanel } from './WorkflowShared.js';
+import { WorkflowQrEvidenceCard, WorkflowQrPanel } from './WorkflowShared.js';
 
 type WorkflowEvidenceSectionProps = {
   session: OrchestrationSession | null;
@@ -219,50 +219,4 @@ export function WorkflowEvidenceSection({ session, isMockLocalVendor, focusStep 
       </div>
     </PageSection>
   );
-}
-
-type WorkflowQrEvidenceCardProps = {
-  copy: string;
-  qrValue: string;
-  qrAlt: string;
-  exchangeId: string;
-  requestUri: string;
-  presentationDefinitionId: string;
-  deepLink: string;
-};
-
-function WorkflowQrEvidenceCard({
-  copy,
-  qrValue,
-  qrAlt,
-  exchangeId,
-  requestUri,
-  presentationDefinitionId,
-  deepLink,
-}: WorkflowQrEvidenceCardProps) {
-  return (
-    <div className="wallet-offer-panel">
-      <p className="supporting-copy wallet-offer-copy">{copy}</p>
-      <QrInline qrValue={qrValue} qrAlt={qrAlt} />
-      <dl className="review-list compact-review-list wallet-offer-meta">
-        <div><dt>Exchange ID</dt><dd>{exchangeId}</dd></div>
-        <div><dt>Request URI</dt><dd>{requestUri}</dd></div>
-        <div><dt>Presentation definition</dt><dd>{presentationDefinitionId}</dd></div>
-      </dl>
-      <div className="wallet-offer-actions">
-        <a className="primary-action-link" href={deepLink}>
-          Open OIDC4VP request
-        </a>
-        <a className="secondary-action-link" href={requestUri} target="_blank" rel="noreferrer">
-          Open request URI
-        </a>
-      </div>
-    </div>
-  );
-}
-
-import { QrCodePanel } from '../../QrCodePanel.js';
-
-function QrInline({ qrValue, qrAlt }: { qrValue: string; qrAlt: string }) {
-  return <QrCodePanel value={qrValue} alt={qrAlt} />;
 }

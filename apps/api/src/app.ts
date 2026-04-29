@@ -287,6 +287,49 @@ export function createApp(dependencies: AppDependencies = {}) {
     response.json(updatedSession);
   });
 
+  app.delete('/api/sessions/:sessionId/steps/:stepKey/history', async (request, response) => {
+    const session = sessions.get(request.params.sessionId);
+
+    if (!session) {
+      response.status(404).json({ error: 'Session not found.' });
+      return;
+    }
+
+    const { stepKey } = request.params;
+
+    if (!isWorkflowStepKey(stepKey)) {
+      response.status(400).json({ error: 'Invalid workflow step key.' });
+      return;
+    }
+
+    const adapter = getAdapter(session.vendorId);
+
+    if (!adapter) {
+      response.status(500).json({ error: 'No adapter registered for the session vendor.' });
+      return;
+    }
+
+    const result = await executeVendorOperation(
+      () => adapter.cleanupStepHistory(session, stepKey),
+      {
+        sessionId: session.sessionId,
+        vendorId: session.vendorId,
+        operationName: `${stepKey}:history:delete`,
+      },
+      executionConfig,
+      logger,
+    );
+
+    if (result.status === 'failed' || result.error) {
+      response.status(400).json({
+        error: result.error?.detail ?? result.error?.message ?? 'Step history cleanup failed.',
+      });
+      return;
+    }
+
+    response.status(204).end();
+  });
+
   app.post('/api/sessions/:sessionId/actions/:actionKey', async (request, response) => {
     const session = sessions.get(request.params.sessionId);
 

@@ -34,6 +34,24 @@ function createPendingPidSession(): OrchestrationSession {
   });
 }
 
+function createPendingPidSessionWithRequest(exchangeId: string): OrchestrationSession {
+  return updateSessionStep(createReadySession(), {
+    step: 'pid',
+    status: 'pending',
+    data: {
+      request: {
+        protocol: 'oidc4vp',
+        exchangeId,
+        requestUri: `https://verifier.example/request/${exchangeId}`,
+        openId4VpUri: `openid4vp://?request_uri=${encodeURIComponent(`https://verifier.example/request/${exchangeId}`)}`,
+        qrCodeValue: `openid4vp://?request_uri=${encodeURIComponent(`https://verifier.example/request/${exchangeId}`)}`,
+        presentationDefinitionId: `pd-${exchangeId}`,
+      },
+    },
+    message: 'PID verification request created.',
+  });
+}
+
 function createPidSucceededBaseSession(): OrchestrationSession {
   const pidRecord: PidRecord = {
     givenName: 'Teemu',
@@ -240,6 +258,26 @@ function createReviewReadySession(): OrchestrationSession {
   });
 }
 
+function createPendingVatIssuanceSession(): OrchestrationSession {
+  const reviewSession = createReviewReadySession();
+  const attestation = reviewSession.review.data!.vatAttestation;
+
+  return updateSessionStep(reviewSession, {
+    step: 'vatIssuance',
+    status: 'pending',
+    data: {
+      vatId: attestation.vatId,
+      administrativeUnitName: attestation.administrativeUnitName,
+      administrativeUnitType: attestation.administrativeUnitType,
+      issuingCountry: attestation.issuingCountry,
+      issuingOrganisation: attestation.issuingOrganisation,
+      exchangeId: 'vat-exchange-1',
+      status: 'pending',
+    },
+    message: 'VAT issuance started and is pending.',
+  });
+}
+
 async function openJourneyPage(label: string): Promise<void> {
   await waitFor(() => {
     expect(screen.getByRole('button', { name: label }).hasAttribute('disabled')).toBe(false);
@@ -300,6 +338,7 @@ describe('App polling', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start workflow' }));
 
     expect(await screen.findByRole('heading', { name: 'PID identification', level: 2 })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Fail' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Local VAT attestation test journey' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Review' }));
@@ -359,7 +398,7 @@ describe('App polling', () => {
 
     render(<App />);
 
-    await openJourneyPage('PID');
+    await openJourneyPage('Identification');
 
     const requestPidButton = await screen.findByRole('button', { name: 'Request PID' }, { timeout: 10000 });
     expect(screen.queryByRole('button', { name: 'Initiate company' })).toBeNull();
@@ -377,6 +416,8 @@ describe('App polling', () => {
     await waitFor(() => {
       expect(pidActionCalls).toBe(2);
       expect(screen.getByText('Teemu Tester')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Continue to next step' })).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Re-request PID' })).toBeTruthy();
     });
 
     await act(async () => {
@@ -386,10 +427,92 @@ describe('App polling', () => {
     expect(pidActionCalls).toBe(2);
   });
 
+  it('continues to the next step and can re-request PID after success', async () => {
+    let currentSession = createSucceededPidSession();
+    let patchCalls = 0;
+    let requestCalls = 0;
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.endsWith('/health') && method === 'GET') {
+        return new Response(JSON.stringify({ status: 'ok', service: 'local-api' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/vendors') && method === 'GET') {
+        return new Response(JSON.stringify(vendorCatalog), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/sessions') && method === 'POST') {
+        return new Response(JSON.stringify(currentSession), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/sessions/session-igrant/steps/pid') && method === 'PATCH') {
+        patchCalls += 1;
+        currentSession = createReadySession();
+
+        return new Response(JSON.stringify(currentSession), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/sessions/session-igrant/actions/pid') && method === 'POST') {
+        requestCalls += 1;
+        currentSession = createPendingPidSessionWithRequest('exchange-rerequest');
+
+        return new Response(JSON.stringify(currentSession), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`Unhandled fetch ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await openJourneyPage('Identification');
+
+    expect(await screen.findByRole('button', { name: 'Continue to next step' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Re-request PID' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Continue to next step' }));
+
+    expect(await screen.findByRole('heading', { name: 'PoA collection', level: 2 })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Identification' }));
+
+    expect(await screen.findByRole('button', { name: 'Re-request PID' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Re-request PID' }));
+
+    await waitFor(() => {
+      expect(patchCalls).toBe(1);
+      expect(requestCalls).toBe(1);
+      expect(screen.getByText('PID presentation request')).toBeTruthy();
+      expect(screen.getByText('exchange-rerequest')).toBeTruthy();
+      expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy();
+    });
+  });
+
   it('starts a new session without letting stale polling update the app', async () => {
     let currentSession = createPendingPidSession();
     let createSessionCalls = 0;
     let pidActionCalls = 0;
+    let cleanupCalls = 0;
     let resolvePendingPidPoll: ((response: Response) => void) | null = null;
 
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
@@ -426,6 +549,14 @@ describe('App polling', () => {
         }));
       }
 
+      if (url.includes('/api/sessions/session-igrant/steps/pid/history') && method === 'DELETE') {
+        cleanupCalls += 1;
+
+        return Promise.resolve(new Response(null, {
+          status: 204,
+        }));
+      }
+
       if (url.includes('/api/sessions/session-igrant/actions/pid') && method === 'POST') {
         pidActionCalls += 1;
 
@@ -454,6 +585,7 @@ describe('App polling', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start new session' }));
 
     expect(await screen.findByText('session-new')).toBeTruthy();
+    expect(cleanupCalls).toBe(1);
 
     act(() => {
       resolvePendingPidPoll?.(new Response(JSON.stringify(createSucceededPidSession()), {
@@ -524,7 +656,7 @@ describe('App polling', () => {
 
     render(<App />);
 
-    await openJourneyPage('PID');
+    await openJourneyPage('Identification');
 
     const requestPidButton = await screen.findByRole('button', { name: 'Request PID' }, { timeout: 10000 });
     fireEvent.click(requestPidButton);
@@ -548,6 +680,327 @@ describe('App polling', () => {
     });
 
     expect(pidActionCalls).toBe(2);
+  });
+
+  it('retries a pending PID request by stopping the old poll and creating a fresh request', async () => {
+    let currentSession = createPendingPidSessionWithRequest('exchange-old');
+    let createRequestCalls = 0;
+    let cleanupCalls = 0;
+    let pollCalls = 0;
+    let resolvePendingPidPoll: ((response: Response) => void) | null = null;
+
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.endsWith('/health') && method === 'GET') {
+        return Promise.resolve(new Response(JSON.stringify({ status: 'ok', service: 'local-api' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      if (url.endsWith('/api/vendors') && method === 'GET') {
+        return Promise.resolve(new Response(JSON.stringify(vendorCatalog), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      if (url.endsWith('/api/sessions') && method === 'POST') {
+        return Promise.resolve(new Response(JSON.stringify(currentSession), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      if (url.includes('/api/sessions/session-igrant/steps/pid/history') && method === 'DELETE') {
+        cleanupCalls += 1;
+
+        return Promise.resolve(new Response(null, {
+          status: 204,
+        }));
+      }
+
+      if (url.includes('/api/sessions/session-igrant/actions/pid') && method === 'POST') {
+        const payload = init?.body ? JSON.parse(String(init.body)) as { simulationMode?: string } : {};
+
+        if (payload.simulationMode) {
+          createRequestCalls += 1;
+          currentSession = createPendingPidSessionWithRequest('exchange-new');
+
+          return Promise.resolve(new Response(JSON.stringify(currentSession), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }));
+        }
+
+        pollCalls += 1;
+
+        if (pollCalls === 1) {
+          return new Promise<Response>((resolve) => {
+            resolvePendingPidPoll = resolve;
+          });
+        }
+
+        return Promise.resolve(new Response(JSON.stringify(createSucceededPidSession()), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      throw new Error(`Unhandled fetch ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await openJourneyPage('Identification');
+
+    expect(await screen.findByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(screen.getByText('exchange-old')).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000);
+    });
+
+    await waitFor(() => {
+      expect(pollCalls).toBe(1);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+
+    await waitFor(() => {
+      expect(createRequestCalls).toBe(1);
+      expect(cleanupCalls).toBe(1);
+      expect(screen.getByText('exchange-new')).toBeTruthy();
+    });
+
+    act(() => {
+      resolvePendingPidPoll?.(new Response(JSON.stringify(createSucceededPidSession()), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('exchange-new')).toBeTruthy();
+    expect(screen.queryByText('Teemu Tester')).toBeNull();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000);
+    });
+
+    await waitFor(() => {
+      expect(pollCalls).toBe(2);
+      expect(screen.getByText('Teemu Tester')).toBeTruthy();
+    });
+  });
+
+  it('cancels a pending PID request by stopping polling and restoring the initial state', async () => {
+    let currentSession = createPendingPidSessionWithRequest('exchange-old');
+    let pollCalls = 0;
+    let patchCalls = 0;
+    let cleanupCalls = 0;
+    let resolvePendingPidPoll: ((response: Response) => void) | null = null;
+
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.endsWith('/health') && method === 'GET') {
+        return Promise.resolve(new Response(JSON.stringify({ status: 'ok', service: 'local-api' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      if (url.endsWith('/api/vendors') && method === 'GET') {
+        return Promise.resolve(new Response(JSON.stringify(vendorCatalog), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      if (url.endsWith('/api/sessions') && method === 'POST') {
+        return Promise.resolve(new Response(JSON.stringify(currentSession), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      if (url.includes('/api/sessions/session-igrant/steps/pid/history') && method === 'DELETE') {
+        cleanupCalls += 1;
+
+        return Promise.resolve(new Response(null, {
+          status: 204,
+        }));
+      }
+
+      if (url.includes('/api/sessions/session-igrant/steps/pid') && method === 'PATCH') {
+        patchCalls += 1;
+        currentSession = createReadySession();
+
+        return Promise.resolve(new Response(JSON.stringify(currentSession), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      if (url.includes('/api/sessions/session-igrant/actions/pid') && method === 'POST') {
+        pollCalls += 1;
+
+        return new Promise<Response>((resolve) => {
+          resolvePendingPidPoll = resolve;
+        });
+      }
+
+      throw new Error(`Unhandled fetch ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await openJourneyPage('Identification');
+
+    expect(await screen.findByRole('button', { name: 'Cancel' })).toBeTruthy();
+    expect(screen.getByText('exchange-old')).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000);
+    });
+
+    await waitFor(() => {
+      expect(pollCalls).toBe(1);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() => {
+      expect(cleanupCalls).toBe(1);
+      expect(patchCalls).toBe(1);
+      expect(screen.getByRole('button', { name: 'Request PID' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Cancel' })).toBeNull();
+      expect(screen.queryByText('PID presentation request')).toBeNull();
+    });
+
+    act(() => {
+      resolvePendingPidPoll?.(new Response(JSON.stringify(createSucceededPidSession()), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(10000);
+    });
+
+    expect(screen.queryByText('Teemu Tester')).toBeNull();
+    expect(pollCalls).toBe(1);
+  });
+
+  it('starts a new session after deleting pending VAT issuance history', async () => {
+    let currentSession = createPendingVatIssuanceSession();
+    let createSessionCalls = 0;
+    let cleanupCalls = 0;
+    let issuancePollCalls = 0;
+    let resolvePendingIssuancePoll: ((response: Response) => void) | null = null;
+
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.endsWith('/health') && method === 'GET') {
+        return Promise.resolve(new Response(JSON.stringify({ status: 'ok', service: 'local-api' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      if (url.endsWith('/api/vendors') && method === 'GET') {
+        return Promise.resolve(new Response(JSON.stringify(vendorCatalog), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      if (url.endsWith('/api/sessions') && method === 'POST') {
+        createSessionCalls += 1;
+
+        if (createSessionCalls === 1) {
+          return Promise.resolve(new Response(JSON.stringify(currentSession), {
+            status: 201,
+            headers: { 'Content-Type': 'application/json' },
+          }));
+        }
+
+        currentSession = createReadySession();
+        currentSession.sessionId = 'session-new';
+
+        return Promise.resolve(new Response(JSON.stringify(currentSession), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        }));
+      }
+
+      if (url.includes('/api/sessions/session-igrant/steps/vatIssuance/history') && method === 'DELETE') {
+        cleanupCalls += 1;
+
+        return Promise.resolve(new Response(null, {
+          status: 204,
+        }));
+      }
+
+      if (url.includes('/api/sessions/session-igrant/actions/issuanceStatus') && method === 'POST') {
+        issuancePollCalls += 1;
+
+        return new Promise<Response>((resolve) => {
+          resolvePendingIssuancePoll = resolve;
+        });
+      }
+
+      throw new Error(`Unhandled fetch ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    expect(await screen.findByText('session-igrant')).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000);
+    });
+
+    await waitFor(() => {
+      expect(issuancePollCalls).toBe(1);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start new session' }));
+
+    expect(await screen.findByText('session-new')).toBeTruthy();
+    expect(cleanupCalls).toBe(1);
+
+    act(() => {
+      resolvePendingIssuancePoll?.(new Response(JSON.stringify(createPendingVatIssuanceSession()), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(30000);
+    });
+
+    expect(screen.getByText('session-new')).toBeTruthy();
+    expect(issuancePollCalls).toBe(1);
   });
 
   it('stops PoA polling and shows the verifier error after a failed wallet-side receive', async () => {
@@ -598,7 +1051,10 @@ describe('App polling', () => {
 
     render(<App />);
 
-    await openJourneyPage('PoA');
+    await openJourneyPage('Mandate');
+
+    expect(await screen.findByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
 
     await waitFor(() => {
       expect(screen.getByText('PoA presentation request')).toBeTruthy();
@@ -668,7 +1124,10 @@ describe('App polling', () => {
 
     render(<App />);
 
-    await openJourneyPage('EUCC');
+    await openJourneyPage('Company');
+
+    expect(await screen.findByRole('button', { name: 'Retry' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeTruthy();
 
     await waitFor(() => {
       expect(screen.getByText('EUCC presentation request')).toBeTruthy();
@@ -768,11 +1227,11 @@ describe('App polling', () => {
 
     render(<App />);
 
-    await openJourneyPage('PID');
+    await openJourneyPage('Identification');
 
     expect(screen.getByRole('button', { name: 'Review' }).hasAttribute('disabled')).toBe(true);
     expect(screen.getByRole('button', { name: 'Next' }).hasAttribute('disabled')).toBe(true);
-    expect(screen.getByRole('heading', { name: 'PID collection surface', level: 3 })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'PID collection surface', level: 3 })).toBeNull();
     expect(screen.queryByText('EUCC presentation request')).toBeNull();
   });
 
