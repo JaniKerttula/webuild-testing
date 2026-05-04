@@ -92,7 +92,6 @@ export function LandingPage({
         session={session}
         sessionState={sessionState}
         health={health}
-        stepCount={stepPages.length}
         onVendorChange={onVendorChange}
         onStartNewSession={onStartNewSession}
         showReviewPayload={false}

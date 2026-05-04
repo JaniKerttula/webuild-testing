@@ -1,9 +1,11 @@
 import { createContext, useContext, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import type {
+  AdapterSimulationMode,
   SessionActionKey,
   VendorId,
   WalletCredentialType,
   WalletInteractionMode,
+  WalletRole,
   WorkflowStepKey,
   WorkflowStepStatus,
 } from '@we-build/domain';
@@ -51,6 +53,7 @@ export type TranslationSet = {
   navigation: {
     landing: string;
     workflowBreadcrumbAria: string;
+    breadcrumbButtonAria: string;
     stepLabels: Record<WorkflowStepKey, string>;
     stepDescriptions: Record<WorkflowStepKey, string>;
   };
@@ -62,6 +65,10 @@ export type TranslationSet = {
   wallets: {
     interactionLabels: Record<WalletInteractionMode, string>;
     credentialStatusLabels: Record<'seeded' | 'offer-created' | 'issued', string>;
+    walletRoleLabels: Record<WalletRole, string>;
+    credentialTypeLabels: Record<WalletCredentialType, string>;
+    offerCopy: string;
+    offerQrAlt: string;
     seedOptions: Array<{
       credentialType: WalletCredentialType;
       label: string;
@@ -78,8 +85,45 @@ export type TranslationSet = {
     journeyCopy: string;
     journeyGridAria: string;
     stepNumber: string;
+    stepDescription: string;
     openPage: string;
     openPageAria: string;
+  };
+  successPage: {
+    title: string;
+    description: string;
+    returnToStart: string;
+  };
+  runtime: {
+    simulationModes: Record<AdapterSimulationMode, string>;
+    sessionNotLoaded: string;
+    checkingApiHealth: string;
+    loadingSession: string;
+    loadedSession: string;
+    unknownSessionLoadingError: string;
+    creatingSession: string;
+    createdSession: string;
+    unknownSessionCreationError: string;
+    runningAction: string;
+    retryingAction: string;
+    actionCompleted: string;
+    unknownActionExecutionError: string;
+    unknownStepResetError: string;
+    restartingAction: string;
+    resetBeforeRestart: string;
+    unknownStepRestartError: string;
+    credentialReceived: Record<'pid' | 'poa' | 'eucc', string>;
+    credentialVerificationFailed: Record<'pid' | 'poa' | 'eucc', string>;
+    unknownPollingError: Record<'pid' | 'poa' | 'eucc' | 'vatIssuance', string>;
+    vatIssued: string;
+    vatIssuanceFailed: string;
+    seedingWallet: string;
+    walletOfferCreated: string;
+    walletSeeded: string;
+    unknownWalletSeedingError: string;
+    healthResponding: string;
+    unknownHealthCheckError: string;
+    unknownVendorLoadingError: string;
   };
   workflowStep: {
     requestHeading: Record<'pid' | 'poa' | 'eucc', string>;
@@ -221,6 +265,30 @@ export type TranslationSet = {
       requestCreated: string;
     };
     currentStepFailed: string;
+  };
+  workflowLegacy: {
+    pageHero: {
+      eyebrow: string;
+      title: string;
+      intro: string;
+      secondaryIntro: string;
+    };
+    stepsSection: {
+      eyebrow: string;
+      title: string;
+      listAria: string;
+      emptyTitle: string;
+      emptyBadge: string;
+      emptySummary: string;
+      emptyNote: string;
+      emptyMeta: string;
+    };
+    walletSetup: {
+      eyebrow: string;
+      title: string;
+      modeTitle: string;
+      setupActions: string;
+    };
   };
 };
 

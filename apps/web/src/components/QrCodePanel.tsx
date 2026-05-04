@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toDataURL } from 'qrcode';
 
-import { useI18n } from './i18n.js';
+import { useI18n } from '../i18n.js';
 
 type QrCodePanelProps = {
   value: string;

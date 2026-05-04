@@ -1,7 +1,8 @@
 import type { WalletCredentialSummary } from '@we-build/domain';
 
-import { QrCodePanel } from '../../QrCodePanel.js';
-import { getIntlLocale, useI18n } from '../../i18n.js';
+import { DetailList, PanelHeader } from '../../components/PageLayout.js';
+import { QrCodePanel } from '../../components/QrCodePanel.js';
+import { formatTranslation, getIntlLocale, useI18n } from '../../i18n.js';
 import { getWalletCredentialStatusLabels } from '../../workflowUi.js';
 
 type WorkflowQrPanelProps = {
@@ -26,9 +27,9 @@ type WorkflowQrEvidenceCardProps = {
   className?: string;
 };
 
-export function formatTimestamp(value?: string, locale: 'fi' | 'en' = 'fi'): string {
+export function formatTimestamp(value?: string, locale: 'fi' | 'en' = 'fi', fallbackLabel = 'Not available'): string {
   if (!value) {
-    return locale === 'fi' ? 'Ei saatavilla' : 'Not available';
+    return fallbackLabel;
   }
 
   const date = new Date(value);
@@ -60,19 +61,20 @@ export function WorkflowQrPanel({
 
   return (
     <section className="panel pid-offer-panel">
-      <div className="panel-heading-inline">
-        <strong>{title}</strong>
-        <span className="vendor-badge">{badge}</span>
-      </div>
+      <PanelHeader title={title} badge={badge} />
       <p className="supporting-copy">{description}</p>
       <div className="pid-offer-grid">
         <QrCodePanel value={qrValue} alt={qrAlt} />
         <div className="pid-offer-details">
-          <dl className="review-list compact-review-list wallet-offer-meta">
-            {metadata.map((item) => (
-              <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>
-            ))}
-          </dl>
+          <DetailList
+            compact
+            className="wallet-offer-meta"
+            items={metadata.map((item) => ({
+              key: item.label,
+              label: item.label,
+              value: item.value,
+            }))}
+          />
           <div className="wallet-offer-actions">
             <a className="primary-action-link" href={primaryAction.href}>
               {primaryAction.label}
@@ -107,11 +109,15 @@ export function WorkflowQrEvidenceCard({
       <div className="pid-offer-grid">
         <QrCodePanel value={qrValue} alt={qrAlt} />
         <div className="pid-offer-details">
-          <dl className="review-list compact-review-list wallet-offer-meta">
-            <div><dt>{t.fields.exchangeId}</dt><dd>{exchangeId}</dd></div>
-            <div><dt>{t.fields.requestUri}</dt><dd>{requestUri}</dd></div>
-            <div><dt>{t.fields.presentationDefinition}</dt><dd>{presentationDefinitionId}</dd></div>
-          </dl>
+          <DetailList
+            compact
+            className="wallet-offer-meta"
+            items={[
+              { key: 'exchange-id', label: t.fields.exchangeId, value: exchangeId },
+              { key: 'request-uri', label: t.fields.requestUri, value: requestUri },
+              { key: 'presentation-definition', label: t.fields.presentationDefinition, value: presentationDefinitionId },
+            ]}
+          />
           <div className="wallet-offer-actions">
             <a className="primary-action-link" href={deepLink}>
               {t.common.openWalletDeepLink}
@@ -141,18 +147,18 @@ export function WalletCredentialCard({ credential }: { credential: WalletCredent
 
       {credential.offer ? (
         <div className="wallet-offer-panel">
-          <p className="supporting-copy wallet-offer-copy">
-            {locale === 'fi'
-              ? 'Skannaa QR-koodi yhteensopivalla lompakolla tai avaa OID4VCI-syvälinkki suoraan.'
-              : 'Scan the QR code with a compatible wallet or open the OID4VCI deep link directly.'}
-          </p>
+          <p className="supporting-copy wallet-offer-copy">{t.wallets.offerCopy}</p>
           <div className="pid-offer-grid">
-            <QrCodePanel value={credential.offer.qrCodeValue} alt={`${credential.label} OID4VCI offer`} />
+            <QrCodePanel value={credential.offer.qrCodeValue} alt={formatTranslation(t.wallets.offerQrAlt, { label: credential.label })} />
             <div className="pid-offer-details">
-              <dl className="review-list compact-review-list wallet-offer-meta">
-                <div><dt>{t.fields.exchangeId}</dt><dd>{credential.offer.exchangeId ?? t.common.pending}</dd></div>
-                <div><dt>{t.fields.pin}</dt><dd>{credential.offer.userPin ?? t.common.notRequired}</dd></div>
-              </dl>
+              <DetailList
+                compact
+                className="wallet-offer-meta"
+                items={[
+                  { key: 'exchange-id', label: t.fields.exchangeId, value: credential.offer.exchangeId ?? t.common.pending },
+                  { key: 'pin', label: t.fields.pin, value: credential.offer.userPin ?? t.common.notRequired },
+                ]}
+              />
               <div className="wallet-offer-actions">
                 <a className="primary-action-link" href={credential.offer.offerUri}>
                   {t.common.openIssuerDeepLink}

@@ -26,7 +26,7 @@ export function WorkflowHistorySection({ session }: WorkflowHistorySectionProps)
                 <span>{workflowStatusLabels[entry.status]}</span>
               </div>
               <p>{entry.message}</p>
-              <time dateTime={entry.timestamp}>{formatTimestamp(entry.timestamp)}</time>
+              <time dateTime={entry.timestamp}>{formatTimestamp(entry.timestamp, locale, t.common.notAvailable)}</time>
             </li>
           )) : <li>{t.common.noEventsYet}</li>}
         </ul>

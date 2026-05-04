@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
 
+export type DetailListItem = {
+  key: string;
+  label: ReactNode;
+  value: ReactNode;
+};
+
 type PageHeroProps = {
   eyebrow?: ReactNode;
   title: string;
@@ -43,5 +49,48 @@ export function PageSection({ id, eyebrow, title, copy, stacked = false, childre
       </div>
       {children}
     </section>
+  );
+}
+
+type PanelHeaderProps = {
+  title: ReactNode;
+  badge?: ReactNode;
+};
+
+type DetailListProps = {
+  items: DetailListItem[];
+  compact?: boolean;
+  className?: string;
+};
+
+export function PanelHeader({ title, badge }: PanelHeaderProps) {
+  return (
+    <div className="panel-heading-inline">
+      <strong>{title}</strong>
+      {badge ? <span className="vendor-badge">{badge}</span> : null}
+    </div>
+  );
+}
+
+export function DetailList({ items, compact = false, className }: DetailListProps) {
+  const classes = ['review-list'];
+
+  if (compact) {
+    classes.push('compact-review-list');
+  }
+
+  if (className) {
+    classes.push(className);
+  }
+
+  return (
+    <dl className={classes.join(' ')}>
+      {items.map((item) => (
+        <div key={item.key}>
+          <dt>{item.label}</dt>
+          <dd>{item.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

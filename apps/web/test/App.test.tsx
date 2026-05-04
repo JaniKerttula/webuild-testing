@@ -4,7 +4,7 @@ import { createInitialSession, updateSessionStep, upsertWalletCredential, vendor
 
 import App from '../src/App.js';
 
-vi.mock('../src/QrCodePanel.js', () => ({
+vi.mock('../src/components/QrCodePanel.js', () => ({
   QrCodePanel: ({ alt, value }: { alt: string; value: string }) => (
     <div data-testid="qr-code-panel">{`${alt}:${value}`}</div>
   ),
@@ -358,6 +358,28 @@ function createPendingVatIssuanceSession(): OrchestrationSession {
   });
 }
 
+function createSucceededVatIssuanceSession(): OrchestrationSession {
+  const pendingSession = createPendingVatIssuanceSession();
+  const issuanceResult = pendingSession.vatIssuance.data!;
+
+  return updateSessionStep(pendingSession, {
+    step: 'vatIssuance',
+    status: 'succeeded',
+    data: {
+      ...issuanceResult,
+      status: 'issued',
+      issuedAt: '2026-04-22T10:07:00.000Z',
+      walletCredential: issuanceResult.walletCredential
+        ? {
+            ...issuanceResult.walletCredential,
+            status: 'issued',
+          }
+        : undefined,
+    },
+    message: 'VAT attestation issued to the company wallet.',
+  });
+}
+
 function createSeededWalletOfferSession(): OrchestrationSession {
   let session = createReadySession();
 
@@ -416,6 +438,7 @@ function createSeededWalletOfferSession(): OrchestrationSession {
 async function openJourneyPage(label: string): Promise<void> {
   await waitFor(() => {
     const targetButton = screen.queryByRole('button', { name: label })
+      ?? screen.queryByRole('button', { name: `Go to ${label} step` })
       ?? screen.queryByRole('button', { name: `Open ${label} page` });
 
     expect(targetButton).toBeTruthy();
@@ -423,6 +446,7 @@ async function openJourneyPage(label: string): Promise<void> {
   });
 
   const targetButton = screen.queryByRole('button', { name: label })
+    ?? screen.queryByRole('button', { name: `Go to ${label} step` })
     ?? screen.getByRole('button', { name: `Open ${label} page` });
 
   fireEvent.click(targetButton);
@@ -442,7 +466,7 @@ describe('App polling', () => {
     localStorage.clear();
   });
 
-  it('switches between page definitions through the shared navigation shell', async () => {
+  it('switches between page definitions through the remaining journey navigation', async () => {
     const currentSession = createReviewReadySession();
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
@@ -471,7 +495,7 @@ describe('App polling', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Local VAT attestation test journey' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'VAT attestation issuance test' })).toBeTruthy();
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Start workflow' }).hasAttribute('disabled')).toBe(false);
@@ -481,15 +505,15 @@ describe('App polling', () => {
 
     expect(await screen.findByRole('heading', { name: 'PID identification', level: 2 })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Fail' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'Local VAT attestation test journey' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'VAT attestation issuance test' })).toBeNull();
 
     await openJourneyPage('Review');
 
     expect(await screen.findByRole('heading', { name: 'Review payload', level: 2 })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Landing' }));
+    fireEvent.click(screen.getByRole('button', { name: 'WE BUILD VAT Issuance Test' }));
 
-    expect(await screen.findByRole('heading', { name: 'Local VAT attestation test journey' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'VAT attestation issuance test' })).toBeTruthy();
   });
 
   it('renders PoA and EUCC wallet offers on the landing page for external-wallet vendors', async () => {
@@ -521,7 +545,7 @@ describe('App polling', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'Local VAT attestation test journey' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'VAT attestation issuance test' })).toBeTruthy();
     expect(await screen.findByText('iGrant PoA attestation')).toBeTruthy();
     expect(screen.getByText('iGrant EUCC attestation')).toBeTruthy();
     expect(screen.getAllByRole('link', { name: 'Open OID4VCI deep-link' })).toHaveLength(3);
@@ -670,7 +694,7 @@ describe('App polling', () => {
 
     expect(await screen.findByRole('heading', { name: 'PoA collection', level: 2 })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Identification' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Go to Identification step' }));
 
     expect(await screen.findByRole('button', { name: 'Re-request PID' })).toBeTruthy();
 
@@ -1461,6 +1485,73 @@ describe('App polling', () => {
     expect(screen.getByTestId('qr-code-panel').textContent).toContain('iGrant VAT attestation OID4VCI offer:openid-credential-offer://credential_offer_uri=https%3A%2F%2Fissuer.example%2Foffers%2Fvat-exchange-1');
     expect(screen.getByRole('link', { name: 'Open OID4VCI deep-link' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Open raw offer URL' })).toBeTruthy();
+  });
+
+  it('navigates to the success page after VAT issuance succeeds and can recreate the session from there', async () => {
+    let currentSession = createReviewReadySession();
+    let createSessionCalls = 0;
+
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = init?.method ?? 'GET';
+
+      if (url.endsWith('/health') && method === 'GET') {
+        return new Response(JSON.stringify({ status: 'ok', service: 'local-api' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/vendors') && method === 'GET') {
+        return new Response(JSON.stringify(vendorCatalog), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.endsWith('/api/sessions') && method === 'POST') {
+        createSessionCalls += 1;
+
+        if (createSessionCalls > 1) {
+          currentSession = createReadySession();
+          currentSession.sessionId = 'session-new';
+        }
+
+        return new Response(JSON.stringify(currentSession), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/sessions/session-igrant/actions/vatIssuance') && method === 'POST') {
+        currentSession = createSucceededVatIssuanceSession();
+
+        return new Response(JSON.stringify(currentSession), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      throw new Error(`Unhandled fetch ${method} ${url}`);
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await openJourneyPage('Issuance');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Submit VAT issuance' }));
+
+    expect(await screen.findByRole('heading', { name: 'VAT attestation issued', level: 2 })).toBeTruthy();
+    expect(screen.getByText('This was a test flow showing how a VAT attestation could be issued in the future. The flow, content, and integration details are still subject to change.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start a new test session' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Start a new test session' }));
+
+    expect(await screen.findByRole('heading', { name: 'VAT attestation issuance test', level: 2 })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start workflow' })).toBeTruthy();
+    expect(await screen.findByText('session-new')).toBeTruthy();
   });
 
   it('restarts VAT issuance by resetting the step and immediately submitting a fresh issuance request', async () => {

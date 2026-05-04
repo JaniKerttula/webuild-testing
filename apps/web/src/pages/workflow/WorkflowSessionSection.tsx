@@ -2,7 +2,7 @@ import type { OrchestrationSession, VendorDefinition, VendorId } from '@we-build
 
 import { PageSection } from '../../components/PageLayout.js';
 import { getVendorDisplay, useI18n } from '../../i18n.js';
-import { getActionLabels, getStatusNotes, getWalletSeedOptions, getWorkflowStatusLabels } from '../../workflowUi.js';
+import { getStatusNotes, getWalletSeedOptions, getWorkflowStatusLabels } from '../../workflowUi.js';
 import { formatTimestamp } from './WorkflowShared.js';
 import { WalletCredentialCard } from './WorkflowShared.js';
 import type { HealthState, SessionState, WorkflowPageProps } from './types.js';
@@ -15,7 +15,6 @@ type WorkflowSessionSectionProps = {
   session: OrchestrationSession | null;
   sessionState: SessionState;
   health: HealthState;
-  stepCount: number;
   onVendorChange: (vendorId: VendorId) => void;
   onStartNewSession: () => void;
   canTriggerVendorActions?: boolean;
@@ -33,7 +32,6 @@ export function WorkflowSessionSection({
   session,
   sessionState,
   health,
-  stepCount,
   onVendorChange,
   onStartNewSession,
   canTriggerVendorActions = false,
@@ -46,7 +44,6 @@ export function WorkflowSessionSection({
   const statusNotes = getStatusNotes(locale);
   const walletSeedOptions = getWalletSeedOptions(locale);
   const workflowStatusLabels = getWorkflowStatusLabels(locale);
-  const actionLabels = getActionLabels(locale);
   const allowsWalletSeeding = Boolean(selectedVendorOption?.capabilities.mockWalletSeeding);
   const showsWalletState = Boolean(
     session?.wallets.personal.loadedCredentials.length
@@ -231,7 +228,7 @@ export function WorkflowSessionSection({
                     <p className="supporting-copy">{t.review.matchedHint}</p>
                   </div>
 
-                  <p className="supporting-copy">{t.review.assembledAt} {formatTimestamp(reviewPayload.assembledAt, locale)}.</p>
+                  <p className="supporting-copy">{t.review.assembledAt} {formatTimestamp(reviewPayload.assembledAt, locale, t.common.notAvailable)}.</p>
                 </div>
               ) : (
                 <p className="supporting-copy">
@@ -266,7 +263,7 @@ export function WorkflowSessionSection({
             <article className="step-card" data-state={session?.vatIssuance.status ?? 'not-started'}>
               <div className="step-card-top">
                 <h4>{t.sessionSection.issuanceResult}</h4>
-                <span className="step-state">{session?.vatIssuance.status ?? 'not-started'}</span>
+                <span className="step-state">{workflowStatusLabels[session?.vatIssuance.status ?? 'not-started']}</span>
               </div>
               <p className="step-summary">
                 {t.sessionSection.issuanceResultSummary}
@@ -279,8 +276,8 @@ export function WorkflowSessionSection({
                   <div><dt>{t.workflowStep.issuanceFields.organisation}</dt><dd>{issuanceResult.issuingOrganisation}</dd></div>
                   <div><dt>{t.workflowStep.issuanceFields.country}</dt><dd>{issuanceResult.issuingCountry}</dd></div>
                   <div><dt>{t.workflowStep.issuanceFields.administrativeUnit}</dt><dd>{issuanceResult.administrativeUnitName}</dd></div>
-                  <div><dt>{t.workflowStep.issuanceFields.status}</dt><dd>{issuanceResult.status}</dd></div>
-                  <div><dt>{t.workflowStep.issuanceFields.issuedAt}</dt><dd>{formatTimestamp(issuanceResult.issuedAt, locale)}</dd></div>
+                  <div><dt>{t.workflowStep.issuanceFields.status}</dt><dd>{workflowStatusLabels[session?.vatIssuance.status ?? 'not-started']}</dd></div>
+                  <div><dt>{t.workflowStep.issuanceFields.issuedAt}</dt><dd>{formatTimestamp(issuanceResult.issuedAt, locale, t.common.notAvailable)}</dd></div>
                   <div><dt>{t.workflowStep.issuanceFields.exchangeId}</dt><dd>{issuanceResult.exchangeId ?? t.common.notAssignedYet}</dd></div>
                 </dl>
               ) : (

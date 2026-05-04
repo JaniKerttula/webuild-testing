@@ -23,7 +23,7 @@ export function WorkflowReviewSection({
   onNavigateToNextStep,
   mode = 'review',
 }: WorkflowReviewSectionProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const reviewPayload = session?.review.data;
   const isIssuanceMode = mode === 'issuance';
   const lastAutoAssembleKeyRef = useRef<string | null>(null);
@@ -106,7 +106,7 @@ export function WorkflowReviewSection({
               </div>
             </div>
 
-            <p className="supporting-copy">{t.review.assembledAt} {formatTimestamp(reviewPayload.assembledAt)}.</p>
+            <p className="supporting-copy">{t.review.assembledAt} {formatTimestamp(reviewPayload.assembledAt, locale, t.common.notAvailable)}.</p>
           </>
         ) : null}
 

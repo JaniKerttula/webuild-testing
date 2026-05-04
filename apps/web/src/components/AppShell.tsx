@@ -2,12 +2,6 @@ import type { ReactNode } from 'react';
 
 const brandMarkUrl = '/resources/images/we-build-logomark-light-bg.png';
 
-export type NavigationItem = {
-  id: string;
-  label: string;
-  disabled?: boolean;
-};
-
 type LanguageLink = {
   id: string;
   label: string;

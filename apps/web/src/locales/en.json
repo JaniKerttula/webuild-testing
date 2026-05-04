@@ -36,6 +36,7 @@
   "navigation": {
     "landing": "Landing",
     "workflowBreadcrumbAria": "Workflow breadcrumb trail",
+    "breadcrumbButtonAria": "Go to {label} step",
     "stepLabels": {
       "pid": "Identification",
       "poa": "Mandate",
@@ -88,6 +89,19 @@
       "offer-created": "OID4VCI offer ready",
       "issued": "Issued to wallet"
     },
+    "walletRoleLabels": {
+      "personal": "personal",
+      "company": "company",
+      "operator": "operator"
+    },
+    "credentialTypeLabels": {
+      "pid": "PID",
+      "poa": "PoA",
+      "eucc": "EUCC",
+      "vat": "VAT attestation"
+    },
+    "offerCopy": "Scan the QR code with a compatible wallet or open the OID4VCI deep link directly.",
+    "offerQrAlt": "{label} OID4VCI offer",
     "seedOptions": [
       { "credentialType": "pid", "label": "Seed PID to personal wallet" },
       { "credentialType": "poa", "label": "Seed PoA to personal wallet" },
@@ -107,7 +121,7 @@
     }
   },
   "landing": {
-    "title": "Local VAT attestation test journey",
+    "title": "VAT attestation issuance test",
     "intro": "Choose a vendor profile, preload test credentials, and walk the orchestration flow page by page.",
     "secondaryIntro": "This app is a local testing workspace for wallet seeding, session orchestration, and vendor-shaped credential exchange before each workflow page gets its final task-specific UI.",
     "startWorkflow": "Start workflow",
@@ -116,8 +130,62 @@
     "journeyCopy": "The workflow is now split into separate pages so each step can evolve independently without forcing every control and evidence panel into a single screen.",
     "journeyGridAria": "Workflow pages",
     "stepNumber": "Step",
+    "stepDescription": "Choose the vendor, seed test credentials, and start the paginated workflow.",
     "openPage": "Open page",
     "openPageAria": "Open {label} page"
+  },
+  "successPage": {
+    "title": "VAT attestation issued",
+    "description": "This was a test flow showing how a VAT attestation could be issued in the future. The flow, content, and integration details are still subject to change.",
+    "returnToStart": "Start a new test session"
+  },
+  "runtime": {
+    "simulationModes": {
+      "success": "success",
+      "failure": "failure",
+      "pending": "pending"
+    },
+    "sessionNotLoaded": "No session loaded yet.",
+    "checkingApiHealth": "Checking local API health.",
+    "loadingSession": "Loading session from the local API.",
+    "loadedSession": "Loaded session {sessionId}.",
+    "unknownSessionLoadingError": "Unknown session loading error.",
+    "creatingSession": "Creating a new session in the local API.",
+    "createdSession": "Created session {sessionId}.",
+    "unknownSessionCreationError": "Unknown session creation error.",
+    "runningAction": "Running {action} in {mode} mode.",
+    "retryingAction": "Retrying {action} in {mode} mode.",
+    "actionCompleted": "{action} completed with {status} state.",
+    "unknownActionExecutionError": "Unknown action execution error.",
+    "unknownStepResetError": "Unknown step reset error.",
+    "restartingAction": "Restarting {action}.",
+    "resetBeforeRestart": "{action} reset before restart.",
+    "unknownStepRestartError": "Unknown step restart error.",
+    "credentialReceived": {
+      "pid": "PID credential data received from the wallet.",
+      "poa": "PoA credential data received from the wallet.",
+      "eucc": "EUCC credential data received from the wallet."
+    },
+    "credentialVerificationFailed": {
+      "pid": "PID credential verification failed during wallet collection.",
+      "poa": "PoA credential verification failed during wallet collection.",
+      "eucc": "EUCC credential verification failed during wallet collection."
+    },
+    "unknownPollingError": {
+      "pid": "Unknown PID polling error.",
+      "poa": "Unknown PoA polling error.",
+      "eucc": "Unknown EUCC polling error.",
+      "vatIssuance": "Unknown VAT issuance polling error."
+    },
+    "vatIssued": "VAT attestation issued to the company wallet.",
+    "vatIssuanceFailed": "VAT attestation issuance failed during wallet pickup.",
+    "seedingWallet": "Seeding {credentialType} into the {walletRole} wallet.",
+    "walletOfferCreated": "{credentialType} OID4VCI offer created for the {walletRole} wallet.",
+    "walletSeeded": "{credentialType} seeded into the {walletRole} wallet.",
+    "unknownWalletSeedingError": "Unknown wallet seeding error.",
+    "healthResponding": "{service} is responding with status {status}.",
+    "unknownHealthCheckError": "Unknown health check error.",
+    "unknownVendorLoadingError": "Unknown vendor loading error."
   },
   "workflowStep": {
     "requestHeading": {
@@ -319,5 +387,29 @@
       "requestCreated": "Presentation request created"
     },
     "currentStepFailed": "The current step failed in the normalized session state. Retry the action from the step control panel when ready."
+  },
+  "workflowLegacy": {
+    "pageHero": {
+      "eyebrow": "Workflow",
+      "title": "Mock VAT attestation workflow",
+      "intro": "This demo site is for local development of the PID, PoA, EUCC, review, and VAT issuance journey.",
+      "secondaryIntro": "The workflow page now sits on generic page-building components so additional screens can reuse the same shell and section model."
+    },
+    "stepsSection": {
+      "eyebrow": "Workflow steps",
+      "title": "Current journey",
+      "listAria": "Workflow steps",
+      "emptyTitle": "Session not loaded",
+      "emptyBadge": "Waiting",
+      "emptySummary": "The workflow cards appear after the session API responds.",
+      "emptyNote": "Use reload or start a new session if the local API was restarted.",
+      "emptyMeta": "Session API step"
+    },
+    "walletSetup": {
+      "eyebrow": "Wallet setup",
+      "title": "Preload test wallets",
+      "modeTitle": "Wallet testing mode",
+      "setupActions": "Setup actions"
+    }
   }
 }

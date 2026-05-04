@@ -33,6 +33,8 @@ This repository keeps translations in two places:
 
 - Prefer `apps/web/src/i18n.tsx` for reusable UI copy.
 - Treat new direct string literals in React components as a smell unless the text is intentionally one-off.
+- Translate the intended meaning in context, not individual words in isolation.
+- Prefer natural human phrasing in the target language while keeping the tone formal and product-appropriate.
 - Do not translate `WE BUILD`. It refers to the organization name and must remain exactly `WE BUILD` in every locale.
 - Preserve the established terms already present in the product, such as VAT attestation, PID, PoA, EUCC, wallet, issuer, and session.
 - If a user request changes visible text outside the web app, scan the surrounding files for the corresponding locale-aware surface before finishing.

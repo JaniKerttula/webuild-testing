@@ -103,7 +103,6 @@ h4 {
 }
 
 .site-header-inner,
-.top-navigation-inner,
 .page-content,
 .site-footer-inner {
   width: min(1600px, 100%);
@@ -1031,7 +1030,6 @@ a {
 
 @media (max-width: 991px) {
   .site-header-inner,
-  .top-navigation-inner,
   .page-content,
   .site-footer-inner {
     padding-left: 16px;

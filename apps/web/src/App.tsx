@@ -13,9 +13,10 @@ import {
   type WorkflowStepStatus,
 } from '@we-build/domain';
 
-import { AppShell, type NavigationItem } from './components/AppShell.js';
-import { I18nProvider, getInitialLocale, getTranslations, localeStorageKey, type AppLocale } from './i18n.js';
+import { AppShell } from './components/AppShell.js';
+import { I18nProvider, formatTranslation, getInitialLocale, getTranslations, localeStorageKey, type AppLocale } from './i18n.js';
 import { LandingPage } from './pages/LandingPage.js';
+import { SuccessPage } from './pages/SuccessPage.js';
 import { WorkflowStepPage } from './pages/WorkflowStepPage.js';
 import { getActionLabels } from './workflowUi.js';
 import type { HealthState, JourneyNavigationItem, JourneyPageId, SessionState } from './pages/workflow/types.js';
@@ -59,6 +60,10 @@ function isJourneyPageEnabled(session: OrchestrationSession | null, pageId: Jour
     return true;
   }
 
+  if (pageId === 'success') {
+    return session?.vatIssuance.status === 'succeeded';
+  }
+
   if (!session) {
     return false;
   }
@@ -71,19 +76,22 @@ export default function App() {
   const [locale, setLocale] = useState<AppLocale>(() => getInitialLocale());
   const t = getTranslations(locale);
   const actionLabels = getActionLabels(locale);
+  const workflowStatusLabels = t.statuses.workflow;
+  const runtime = t.runtime;
   const [vendorOptions, setVendorOptions] = useState<VendorDefinition[]>([]);
   const [selectedVendor, setSelectedVendor] = useState<VendorId>('igrant-sandbox');
   const [currentPageId, setCurrentPageId] = useState<JourneyPageId>('landing');
   const [session, setSession] = useState<OrchestrationSession | null>(null);
   const [sessionState, setSessionState] = useState<SessionState>({
     status: 'idle',
-    detail: locale === 'fi' ? 'Istuntoa ei ole vielä ladattu.' : 'No session loaded yet.',
+    detail: runtime.sessionNotLoaded,
   });
   const [health, setHealth] = useState<HealthState>({
     status: 'loading',
-    detail: locale === 'fi' ? 'Tarkistetaan paikallisen API:n tila.' : 'Checking local API health.',
+    detail: runtime.checkingApiHealth,
   });
   const pollingGenerationRef = useRef(0);
+  const previousVatIssuanceStatusRef = useRef<WorkflowStepStatus | null>(null);
   const pollControllerRef = useRef<Record<PollableStepKey, AbortController | null>>({
     pid: null,
     poa: null,
@@ -198,7 +206,7 @@ export default function App() {
   async function refreshSession(vendorId: VendorId): Promise<void> {
     setSessionState({
       status: 'loading',
-      detail: locale === 'fi' ? 'Ladataan istunto paikallisesta API:sta.' : 'Loading session from the local API.',
+      detail: runtime.loadingSession,
     });
 
     try {
@@ -206,15 +214,13 @@ export default function App() {
       setSession(nextSession);
       setSessionState({
         status: 'ready',
-        detail: locale === 'fi'
-          ? `Istunto ${nextSession.sessionId} ladattu.`
-          : `Loaded session ${nextSession.sessionId}.`,
+        detail: formatTranslation(runtime.loadedSession, { sessionId: nextSession.sessionId }),
       });
     } catch (error) {
       setSession(null);
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon virhe istunnon latauksessa.' : 'Unknown session loading error.',
+        detail: error instanceof Error ? error.message : runtime.unknownSessionLoadingError,
       });
     }
   }
@@ -226,7 +232,7 @@ export default function App() {
     invalidatePolling();
     setSessionState({
       status: 'loading',
-      detail: locale === 'fi' ? 'Luodaan uusi istunto paikalliseen API:in.' : 'Creating a new session in the local API.',
+      detail: runtime.creatingSession,
     });
 
     try {
@@ -239,12 +245,12 @@ export default function App() {
       setSession(nextSession);
       setSessionState({
         status: 'ready',
-        detail: locale === 'fi' ? `Istunto ${nextSession.sessionId} luotu.` : `Created session ${nextSession.sessionId}.`,
+        detail: formatTranslation(runtime.createdSession, { sessionId: nextSession.sessionId }),
       });
     } catch (error) {
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon virhe istunnon luonnissa.' : 'Unknown session creation error.',
+        detail: error instanceof Error ? error.message : runtime.unknownSessionCreationError,
       });
     }
   }
@@ -262,7 +268,13 @@ export default function App() {
 
     setSessionState({
       status: 'loading',
-      detail: `${isRetryingEvidenceRequest ? `Retrying ${actionLabels[actionKey]}` : `Running ${actionLabels[actionKey]}`} in ${simulationMode} mode.`,
+      detail: formatTranslation(
+        isRetryingEvidenceRequest ? runtime.retryingAction : runtime.runningAction,
+        {
+          action: actionLabels[actionKey],
+          mode: runtime.simulationModes[simulationMode],
+        },
+      ),
     });
 
     try {
@@ -287,12 +299,15 @@ export default function App() {
       setSession(nextSession);
       setSessionState({
         status: 'ready',
-        detail: `${actionLabels[actionKey]} completed with ${updatedStep.status} state.`,
+        detail: formatTranslation(runtime.actionCompleted, {
+          action: actionLabels[actionKey],
+          status: workflowStatusLabels[updatedStep.status],
+        }),
       });
     } catch (error) {
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon virhe toiminnon suorituksessa.' : 'Unknown action execution error.',
+        detail: error instanceof Error ? error.message : runtime.unknownActionExecutionError,
       });
     }
   }
@@ -342,7 +357,7 @@ export default function App() {
     } catch (error) {
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon virhe vaiheen nollauksessa.' : 'Unknown step reset error.',
+        detail: error instanceof Error ? error.message : runtime.unknownStepResetError,
       });
     }
   }
@@ -360,7 +375,7 @@ export default function App() {
 
     setSessionState({
       status: 'loading',
-      detail: `Restarting ${actionLabels[stepKey]}.`,
+      detail: formatTranslation(runtime.restartingAction, { action: actionLabels[stepKey] }),
     });
 
     try {
@@ -375,7 +390,7 @@ export default function App() {
         },
         body: JSON.stringify({
           status: 'ready',
-          message: `${actionLabels[stepKey]} reset before restart.`,
+          message: formatTranslation(runtime.resetBeforeRestart, { action: actionLabels[stepKey] }),
         }),
       });
 
@@ -402,12 +417,15 @@ export default function App() {
       setSession(nextSession);
       setSessionState({
         status: 'ready',
-        detail: `${actionLabels[stepKey]} completed with ${nextSession[stepKey].status} state.`,
+        detail: formatTranslation(runtime.actionCompleted, {
+          action: actionLabels[stepKey],
+          status: workflowStatusLabels[nextSession[stepKey].status],
+        }),
       });
     } catch (error) {
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon virhe vaiheen uudelleenkäynnistyksessä.' : 'Unknown step restart error.',
+        detail: error instanceof Error ? error.message : runtime.unknownStepRestartError,
       });
     }
   }
@@ -440,7 +458,7 @@ export default function App() {
       if (nextSession.pid.status === 'succeeded') {
         setSessionState({
           status: 'ready',
-          detail: locale === 'fi' ? 'PID-tunnistetiedot vastaanotettu lompakosta.' : 'PID credential data received from the wallet.',
+          detail: runtime.credentialReceived.pid,
         });
         return;
       }
@@ -448,9 +466,7 @@ export default function App() {
       if (nextSession.pid.status === 'failed') {
         setSessionState({
           status: 'error',
-          detail: nextSession.pid.error?.message ?? (locale === 'fi'
-            ? 'PID-tunnistetietojen varmennus epäonnistui lompakkokeruun aikana.'
-            : 'PID credential verification failed during wallet collection.'),
+          detail: nextSession.pid.error?.message ?? runtime.credentialVerificationFailed.pid,
         });
       }
     } catch (error) {
@@ -464,7 +480,7 @@ export default function App() {
 
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon PID-kyselyvirhe.' : 'Unknown PID polling error.',
+        detail: error instanceof Error ? error.message : runtime.unknownPollingError.pid,
       });
     } finally {
       clearPollingRequest('pid', controller);
@@ -499,7 +515,7 @@ export default function App() {
       if (nextSession.poa.status === 'succeeded') {
         setSessionState({
           status: 'ready',
-          detail: locale === 'fi' ? 'PoA-tunnistetiedot vastaanotettu lompakosta.' : 'PoA credential data received from the wallet.',
+          detail: runtime.credentialReceived.poa,
         });
         return;
       }
@@ -507,9 +523,7 @@ export default function App() {
       if (nextSession.poa.status === 'failed') {
         setSessionState({
           status: 'error',
-          detail: nextSession.poa.error?.message ?? (locale === 'fi'
-            ? 'PoA-tunnistetietojen varmennus epäonnistui lompakkokeruun aikana.'
-            : 'PoA credential verification failed during wallet collection.'),
+          detail: nextSession.poa.error?.message ?? runtime.credentialVerificationFailed.poa,
         });
       }
     } catch (error) {
@@ -523,7 +537,7 @@ export default function App() {
 
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : locale === 'fi' ? 'Tuntematon PoA-kyselyvirhe.' : 'Unknown PoA polling error.',
+        detail: error instanceof Error ? error.message : runtime.unknownPollingError.poa,
       });
     } finally {
       clearPollingRequest('poa', controller);
@@ -558,7 +572,7 @@ export default function App() {
       if (nextSession.eucc.status === 'succeeded') {
         setSessionState({
           status: 'ready',
-          detail: 'EUCC credential data received from the wallet.',
+          detail: runtime.credentialReceived.eucc,
         });
         return;
       }
@@ -566,7 +580,7 @@ export default function App() {
       if (nextSession.eucc.status === 'failed') {
         setSessionState({
           status: 'error',
-          detail: nextSession.eucc.error?.message ?? 'EUCC credential verification failed during wallet collection.',
+          detail: nextSession.eucc.error?.message ?? runtime.credentialVerificationFailed.eucc,
         });
       }
     } catch (error) {
@@ -580,7 +594,7 @@ export default function App() {
 
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown EUCC polling error.',
+        detail: error instanceof Error ? error.message : runtime.unknownPollingError.eucc,
       });
     } finally {
       clearPollingRequest('eucc', controller);
@@ -615,7 +629,7 @@ export default function App() {
       if (nextSession.vatIssuance.status === 'succeeded') {
         setSessionState({
           status: 'ready',
-          detail: 'VAT attestation issued to the company wallet.',
+          detail: runtime.vatIssued,
         });
         return;
       }
@@ -623,7 +637,7 @@ export default function App() {
       if (nextSession.vatIssuance.status === 'failed') {
         setSessionState({
           status: 'error',
-          detail: nextSession.vatIssuance.error?.message ?? 'VAT attestation issuance failed during wallet pickup.',
+          detail: nextSession.vatIssuance.error?.message ?? runtime.vatIssuanceFailed,
         });
       }
     } catch (error) {
@@ -637,7 +651,7 @@ export default function App() {
 
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown VAT issuance polling error.',
+        detail: error instanceof Error ? error.message : runtime.unknownPollingError.vatIssuance,
       });
     } finally {
       clearPollingRequest('vatIssuance', controller);
@@ -651,7 +665,10 @@ export default function App() {
 
     setSessionState({
       status: 'loading',
-      detail: `Seeding ${credentialType} into the ${walletRole} wallet.`,
+      detail: formatTranslation(runtime.seedingWallet, {
+        credentialType: t.wallets.credentialTypeLabels[credentialType],
+        walletRole: t.wallets.walletRoleLabels[walletRole],
+      }),
     });
 
     try {
@@ -673,13 +690,19 @@ export default function App() {
       setSessionState({
         status: 'ready',
         detail: selectedVendorOption?.walletInteraction[walletRole] === 'external-wallet-app'
-          ? `${credentialType.toUpperCase()} OID4VCI offer created for the ${walletRole} wallet.`
-          : `${credentialType.toUpperCase()} seeded into the ${walletRole} wallet.`,
+          ? formatTranslation(runtime.walletOfferCreated, {
+              credentialType: t.wallets.credentialTypeLabels[credentialType],
+              walletRole: t.wallets.walletRoleLabels[walletRole],
+            })
+          : formatTranslation(runtime.walletSeeded, {
+              credentialType: t.wallets.credentialTypeLabels[credentialType],
+              walletRole: t.wallets.walletRoleLabels[walletRole],
+            }),
       });
     } catch (error) {
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown wallet seeding error.',
+        detail: error instanceof Error ? error.message : runtime.unknownWalletSeedingError,
       });
     }
   }
@@ -696,7 +719,10 @@ export default function App() {
         const payload = (await response.json()) as { status: string; service: string };
         setHealth({
           status: 'ok',
-          detail: `${payload.service} is responding with status ${payload.status}.`,
+          detail: formatTranslation(runtime.healthResponding, {
+            service: payload.service,
+            status: payload.status,
+          }),
         });
       })
       .catch((error: unknown) => {
@@ -706,7 +732,7 @@ export default function App() {
 
         setHealth({
           status: 'error',
-          detail: error instanceof Error ? error.message : 'Unknown health check error.',
+          detail: error instanceof Error ? error.message : runtime.unknownHealthCheckError,
         });
       });
 
@@ -717,7 +743,7 @@ export default function App() {
     void loadVendors().catch((error) => {
       setSessionState({
         status: 'error',
-        detail: error instanceof Error ? error.message : 'Unknown vendor loading error.',
+        detail: error instanceof Error ? error.message : runtime.unknownVendorLoadingError,
       });
     });
   }, []);
@@ -822,6 +848,17 @@ export default function App() {
   }, [selectedVendor, session?.sessionId, session?.vatIssuance.status, session?.vatIssuance.data?.exchangeId]);
 
   useEffect(() => {
+    const currentStatus = session?.vatIssuance.status ?? null;
+    const previousStatus = previousVatIssuanceStatusRef.current;
+
+    previousVatIssuanceStatusRef.current = currentStatus;
+
+    if (currentStatus === 'succeeded' && previousStatus !== null && previousStatus !== 'succeeded') {
+      setCurrentPageId('success');
+    }
+  }, [session?.vatIssuance.status]);
+
+  useEffect(() => {
     if (currentPageId === 'landing' || isJourneyPageEnabled(session, currentPageId)) {
       return;
     }
@@ -837,9 +874,7 @@ export default function App() {
     {
       id: 'landing',
       label: t.navigation.landing,
-      description: locale === 'fi'
-        ? 'Valitse toimittaja, esitäytä testitunnukset ja käynnistä vaiheittainen työnkulku.'
-        : 'Choose the vendor, seed test credentials, and start the paginated workflow.',
+      description: t.landing.stepDescription,
     },
     ...workflowStepDefinitions.map((step, index) => ({
       id: step.key,
@@ -855,17 +890,6 @@ export default function App() {
       ...item,
       disabled: isJourneyPageEnabled(session, item.id) === false,
     }));
-  const navigationItems: NavigationItem[] = [
-    {
-      id: 'landing',
-      label: t.navigation.landing,
-    },
-    ...stepPages.map((item) => ({
-      id: item.id,
-      label: item.label,
-      disabled: item.disabled,
-    })),
-  ];
   const firstEnabledStepPage = stepPages.find((page) => !page.disabled)?.id ?? 'landing';
   const workflowPageProps = {
     apiBaseUrl,
@@ -876,7 +900,6 @@ export default function App() {
     sessionState,
     health,
     onVendorChange: setSelectedVendor,
-    onRefreshSession: () => void refreshSession(selectedVendor),
     onStartNewSession: () => void startNewSession(),
     onTriggerAction: (actionKey: SessionActionKey, simulationMode?: AdapterSimulationMode) => void triggerAction(actionKey, simulationMode),
     onResetStep: (stepKey: WorkflowStepKey, status: WorkflowStepStatus, message: string) => void resetStep(stepKey, status, message),
@@ -892,6 +915,17 @@ export default function App() {
           stepPages={stepPages}
           onNavigate={setCurrentPageId}
           onStartWorkflow={() => setCurrentPageId(firstEnabledStepPage)}
+        />
+      ),
+    },
+    {
+      id: 'success' as const,
+      render: () => (
+        <SuccessPage
+          onReturnToStart={() => {
+            setCurrentPageId('landing');
+            void startNewSession();
+          }}
         />
       ),
     },

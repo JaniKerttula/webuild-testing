@@ -20,7 +20,7 @@ export type SessionState = {
   detail: string;
 };
 
-export type JourneyPageId = 'landing' | WorkflowStepKey;
+export type JourneyPageId = 'landing' | 'success' | WorkflowStepKey;
 
 export type JourneyNavigationItem = {
   id: JourneyPageId;
@@ -40,7 +40,6 @@ export type WorkflowPageProps = {
   sessionState: SessionState;
   health: HealthState;
   onVendorChange: (vendorId: VendorId) => void;
-  onRefreshSession: () => void;
   onStartNewSession: () => void;
   onTriggerAction: (actionKey: SessionActionKey, simulationMode?: AdapterSimulationMode) => void;
   onResetStep: (stepKey: WorkflowStepKey, status: WorkflowStepStatus, message: string) => void;
