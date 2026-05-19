@@ -14,7 +14,7 @@
     "check": "npm run check -w @we-build/domain && npm run check -w @we-build/web && npm run check -w @we-build/api",
     "test": "npm run test -w @we-build/domain && npm run test -w @we-build/api",
     "verify:api": "node scripts/verify-api.mjs",
-    "start": "npm start -w @we-build/web"
+    "start": "node startup.js"
   },
   "engines": {
     "node": ">=24"

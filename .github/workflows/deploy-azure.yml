@@ -45,6 +45,8 @@ jobs:
             package.json
             package-lock.json
             tsconfig.base.json
+            startup-api.js
+            web-api.config
             packages/
             apps/api/
             !**/node_modules/**
@@ -76,6 +78,8 @@ jobs:
             package.json
             package-lock.json
             tsconfig.base.json
+            web.config
+            startup.js
             packages/
             apps/web/
             !**/node_modules/**
@@ -88,6 +92,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: api-app
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rename web config for API
+        run: mv web-api.config web.config
 
       - name: Deploy API app
         uses: azure/webapps-deploy@v3
@@ -105,6 +115,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-app
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Deploy Web app
         uses: azure/webapps-deploy@v3
