@@ -59,3 +59,39 @@ IGRANT_VAT_CREDENTIAL_DEFINITION_ID=...
 The app uses repository fixture data as test claims, but sends those claims through iGrant to external wallet applications rather than the in-app mock wallets.
 
 Both vendor profiles also expose wallet seeding for operator testing. For `mock-local`, the app stores fixture summaries directly in local session state. For `igrant-sandbox`, the seed action calls the vendor issuance API, creates a real OID4VCI offer, and the UI renders a QR code plus deep-link for scanning with a real wallet.
+
+## Azure installation and deployment
+
+An Azure deployment plan for this repository is available in `.azure/plan.copilotmd`.
+
+It contains:
+
+- the recommended Azure resource layout,
+- required environment variable mapping for both services,
+- and step-by-step Azure CLI provisioning and deployment commands.
+
+## GitHub Actions deployment
+
+This repository includes an Azure deployment workflow at `.github/workflows/deploy-azure.yml`.
+
+Triggers:
+
+- push to `main`
+- manual run from Actions (`workflow_dispatch`)
+
+Required repository secrets:
+
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+- `AZURE_RESOURCE_GROUP`
+- `AZURE_WEBAPP_API_NAME`
+- `AZURE_WEBAPP_WEB_NAME`
+
+The workflow will:
+
+1. install dependencies and run type checks,
+2. log in to Azure using OIDC,
+3. set both Web Apps to Node 24 LTS runtime,
+4. apply startup/app settings for API and Web,
+5. deploy the repository package to both apps.

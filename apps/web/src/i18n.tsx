@@ -52,6 +52,7 @@ export type TranslationSet = {
   };
   navigation: {
     landing: string;
+    primaryNavigationAria: string;
     workflowBreadcrumbAria: string;
     breadcrumbButtonAria: string;
     stepLabels: Record<WorkflowStepKey, string>;
@@ -88,11 +89,6 @@ export type TranslationSet = {
     stepDescription: string;
     openPage: string;
     openPageAria: string;
-  };
-  successPage: {
-    title: string;
-    description: string;
-    returnToStart: string;
   };
   runtime: {
     simulationModes: Record<AdapterSimulationMode, string>;
