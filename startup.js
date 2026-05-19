@@ -5,11 +5,13 @@ import path from 'path';
 import { spawn } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const webDir = path.join(__dirname, 'apps', 'web');
+const siteName = `${process.env.APP_ROLE ?? process.env.WEBSITE_SITE_NAME ?? ''}`;
+const isApiApp = /api/i.test(siteName);
+const targetScript = isApiApp
+  ? path.join(__dirname, 'apps', 'api', 'dist', 'server.js')
+  : path.join(__dirname, 'apps', 'web', 'server.js');
 
-// Start the web server from the web app directory
-process.chdir(webDir);
-const proc = spawn('node', ['server.js'], {
+const proc = spawn('node', [targetScript], {
   stdio: 'inherit',
   env: { ...process.env }
 });

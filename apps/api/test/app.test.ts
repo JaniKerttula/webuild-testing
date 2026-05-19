@@ -90,6 +90,18 @@ describe('API hardening', () => {
     expect(response.headers['access-control-allow-origin']).toBe('http://127.0.0.1:5174');
   });
 
+  it('allows azurewebsites.net origins by default', async () => {
+    const app = createApp();
+
+    const origin = 'https://webuild-vendor-test-d3fjd2aub8bjcqas.westeurope-01.azurewebsites.net';
+    const response = await request(app)
+      .get('/health')
+      .set('Origin', origin)
+      .expect(200);
+
+    expect(response.headers['access-control-allow-origin']).toBe(origin);
+  });
+
   it('rejects invalid simulation modes before calling the adapter', async () => {
     const app = createApp();
 

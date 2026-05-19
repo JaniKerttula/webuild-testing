@@ -48,8 +48,8 @@ function getCorsOrigins(corsOrigin?: string | string[]): string[] {
   return [];
 }
 
-function isAllowedLoopbackOrigin(origin: string): boolean {
-  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+function isAllowedDefaultOrigin(origin: string): boolean {
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin) || /^https:\/\/.+\.azurewebsites\.net$/i.test(origin);
 }
 
 function normalizeStepStatus(result: AdapterOperationResult<unknown>): 'succeeded' | 'pending' | 'failed' {
@@ -155,7 +155,7 @@ export function createApp(dependencies: AppDependencies = {}) {
         return;
       }
 
-      callback(null, isAllowedLoopbackOrigin(origin));
+      callback(null, isAllowedDefaultOrigin(origin));
     },
   }));
   app.use(express.json());
