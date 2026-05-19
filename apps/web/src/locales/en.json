@@ -135,6 +135,11 @@
     "openPage": "Open page",
     "openPageAria": "Open {label} page"
   },
+  "successPage": {
+    "title": "Workflow completed",
+    "description": "The VAT attestation test flow is complete. You can return to the landing page to start a new run.",
+    "returnToStart": "Return to start"
+  },
   "runtime": {
     "simulationModes": {
       "success": "success",

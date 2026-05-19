@@ -90,6 +90,11 @@ export type TranslationSet = {
     openPage: string;
     openPageAria: string;
   };
+  successPage: {
+    title: string;
+    description: string;
+    returnToStart: string;
+  };
   runtime: {
     simulationModes: Record<AdapterSimulationMode, string>;
     sessionNotLoaded: string;

@@ -135,6 +135,11 @@
     "openPage": "Avaa sivu",
     "openPageAria": "Avaa sivu {label}"
   },
+  "successPage": {
+    "title": "Työnkulku valmis",
+    "description": "ALV-todistuksen testipolku on valmis. Voit palata aloitussivulle ja käynnistää uuden kierroksen.",
+    "returnToStart": "Palaa alkuun"
+  },
   "runtime": {
     "simulationModes": {
       "success": "onnistuminen",

@@ -495,7 +495,7 @@ describe('App polling', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'VAT attestation issuance test' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Local VAT attestation test journey' })).toBeTruthy();
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Start workflow' }).hasAttribute('disabled')).toBe(false);
@@ -505,7 +505,7 @@ describe('App polling', () => {
 
     expect(await screen.findByRole('heading', { name: 'PID identification', level: 2 })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Fail' })).toBeNull();
-    expect(screen.queryByRole('heading', { name: 'VAT attestation issuance test' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Local VAT attestation test journey' })).toBeNull();
 
     await openJourneyPage('Review');
 
@@ -513,7 +513,7 @@ describe('App polling', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'WE BUILD VAT Issuance Test' }));
 
-    expect(await screen.findByRole('heading', { name: 'VAT attestation issuance test' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Local VAT attestation test journey' })).toBeTruthy();
   });
 
   it('renders PoA and EUCC wallet offers on the landing page for external-wallet vendors', async () => {
@@ -545,7 +545,7 @@ describe('App polling', () => {
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: 'VAT attestation issuance test' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Local VAT attestation test journey' })).toBeTruthy();
     expect(await screen.findByText('iGrant PoA attestation')).toBeTruthy();
     expect(screen.getByText('iGrant EUCC attestation')).toBeTruthy();
     expect(screen.getAllByRole('link', { name: 'Open OID4VCI deep-link' })).toHaveLength(3);
@@ -1543,13 +1543,13 @@ describe('App polling', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Submit VAT issuance' }));
 
-    expect(await screen.findByRole('heading', { name: 'VAT attestation issued', level: 2 })).toBeTruthy();
-    expect(screen.getByText('This was a test flow showing how a VAT attestation could be issued in the future. The flow, content, and integration details are still subject to change.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Start a new test session' })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Workflow completed', level: 2 })).toBeTruthy();
+    expect(screen.getByText('The VAT attestation test flow is complete. You can return to the landing page to start a new run.')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Return to start' })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Start a new test session' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Return to start' }));
 
-    expect(await screen.findByRole('heading', { name: 'VAT attestation issuance test', level: 2 })).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Local VAT attestation test journey', level: 2 })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Start workflow' })).toBeTruthy();
     expect(await screen.findByText('session-new')).toBeTruthy();
   });
