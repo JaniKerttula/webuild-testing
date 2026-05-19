@@ -95,9 +95,28 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: api-app
+          path: .
+
+      - name: Ensure API startup file is at deploy root
+        run: |
+          if [ ! -f startup.js ]; then
+            found_startup="$(find . -type f -name startup.js | head -n 1)"
+            if [ -n "$found_startup" ]; then
+              cp "$found_startup" ./startup.js
+            fi
+          fi
+
+          if [ ! -f startup.js ] && [ -f startup-api.js ]; then
+            cp startup-api.js startup.js
+          fi
+
+          test -f startup.js
 
       - name: Rename web config for API
-        run: mv web-api.config web.config
+        run: |
+          if [ -f web-api.config ]; then
+            mv web-api.config web.config
+          fi
         
       - name: Deploy API app
         uses: azure/webapps-deploy@v3
