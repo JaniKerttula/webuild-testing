@@ -45,6 +45,7 @@ jobs:
             package.json
             package-lock.json
             tsconfig.base.json
+            startup.js
             startup-api.js
             web-api.config
             packages/
