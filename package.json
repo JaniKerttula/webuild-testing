@@ -13,7 +13,8 @@
     "build": "npm run build -w @we-build/domain && npm run build -w @we-build/web && npm run build -w @we-build/api",
     "check": "npm run check -w @we-build/domain && npm run check -w @we-build/web && npm run check -w @we-build/api",
     "test": "npm run test -w @we-build/domain && npm run test -w @we-build/api",
-    "verify:api": "node scripts/verify-api.mjs"
+    "verify:api": "node scripts/verify-api.mjs",
+    "start": "npm start -w @we-build/web"
   },
   "engines": {
     "node": ">=24"

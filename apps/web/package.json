@@ -7,10 +7,12 @@
     "dev": "vite --host 0.0.0.0 --port ${WEB_PORT:-5173}",
     "build": "tsc --noEmit && vite build",
     "check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "start": "node server.js"
   },
   "dependencies": {
     "@we-build/domain": "file:../../packages/domain",
+    "express": "^4.18.2",
     "qrcode": "^1.5.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
