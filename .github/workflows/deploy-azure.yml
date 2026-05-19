@@ -100,13 +100,7 @@ jobs:
 
       - name: Rename web config for API
         run: mv web-api.config web.config
-
-      - name: Configure API app settings
-        uses: azure/appservice-settings@v1
-        with:
-          app-name: 'webuild-test-api'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_55F11699BF904CDB9CD0EBC4201865F4 }}
-      
+        
       - name: Deploy API app
         uses: azure/webapps-deploy@v3
         with:
