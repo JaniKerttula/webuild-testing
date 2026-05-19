@@ -63,6 +63,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - name: Install, build, and test
+        env:
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: |
           npm ci
           npm run build -w @we-build/domain
@@ -98,6 +100,24 @@ jobs:
 
       - name: Rename web config for API
         run: mv web-api.config web.config
+
+      - name: Configure API app settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'webuild-test-api'
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_55F11699BF904CDB9CD0EBC4201865F4 }}
+          app-settings-json: |
+            [
+              { "name": "CORS_ORIGIN", "value": "${{ secrets.CORS_ORIGIN }}", "slotSetting": false },
+              { "name": "IGRANT_BASE_URL", "value": "${{ secrets.IGRANT_BASE_URL }}", "slotSetting": false },
+              { "name": "IGRANT_AUTH_SCHEME", "value": "${{ secrets.IGRANT_AUTH_SCHEME }}", "slotSetting": false },
+              { "name": "IGRANT_API_KEY", "value": "${{ secrets.IGRANT_API_KEY }}", "slotSetting": false },
+              { "name": "IGRANT_USER_PIN", "value": "${{ secrets.IGRANT_USER_PIN }}", "slotSetting": false },
+              { "name": "IGRANT_PERSONAL_CREDENTIAL_DEFINITION_ID", "value": "${{ secrets.IGRANT_PERSONAL_CREDENTIAL_DEFINITION_ID }}", "slotSetting": false },
+              { "name": "IGRANT_POA_CREDENTIAL_DEFINITION_ID", "value": "${{ secrets.IGRANT_POA_CREDENTIAL_DEFINITION_ID }}", "slotSetting": false },
+              { "name": "IGRANT_EUCC_CREDENTIAL_DEFINITION_ID", "value": "${{ secrets.IGRANT_EUCC_CREDENTIAL_DEFINITION_ID }}", "slotSetting": false },
+              { "name": "IGRANT_VAT_CREDENTIAL_DEFINITION_ID", "value": "${{ secrets.IGRANT_VAT_CREDENTIAL_DEFINITION_ID }}", "slotSetting": false }
+            ]
 
       - name: Deploy API app
         uses: azure/webapps-deploy@v3
